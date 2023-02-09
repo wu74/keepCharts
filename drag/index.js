@@ -52,3 +52,5 @@ class DragElement {
         this.dragDom.style.left = x + 'px'
     }
 }
+
+console.log(1111);
