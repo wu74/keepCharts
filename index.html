@@ -12,6 +12,7 @@
             padding: 0;
         }
         #container {
+            position: relative;
             width: 800px;
             height: 500px;
             margin: 50px auto;
@@ -20,21 +21,55 @@
         }
 
         .rect {
-            position: relative; 
+            position: absolute; 
             width: 50px;
             height: 50px;
-            background-color: #409eff;
+            /* background-color: #409eff; */
+        }
+
+        .rect1 {
+            top: 250px;
+            left: 200px;
+            background-color: pink;
+        }
+
+        .rect2 {
+            background-color: skyblue;
+        }
+
+        .rect3 {
+            top: 90px;
+            left: 44px;
+            background-color: red;
+        }
+
+        .rect4 {
+            top: 200px;
+            left: 150px;
+            background-color: #67c23a;
         }
     </style>
 </head>
 <body>
     <div id="container">
-        <div class="rect"></div>
+        <div class="rect1 rect"></div>
+        <div class="rect2 rect"></div>
+        <div class="rect3 rect"></div>
+        <div class="rect4 rect"></div>
     </div>
     <script src="./index.js"></script>
     <script>
-        let drag = new DragElement('.rect', '#container')
-        drag.init()
+        let rect1 = new DragElement('.rect1', '#container')
+        rect1.init()
+
+        let rect2 = new DragElement('.rect2', '#container')
+        rect2.init()
+
+        let rect3 = new DragElement('.rect3', '#container')
+        rect2.init()
+
+        let rect4 = new DragElement('.rect4', '#container')
+        rect2.init()
     </script>
 </body>
 </html>

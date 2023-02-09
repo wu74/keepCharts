@@ -3,14 +3,17 @@ class DragElement {
         // 获取 DOM 节点
         const graph = document.querySelector(containerSelector)
         this.dragDom = document.querySelector(dragSelector)
-        
+
+        this.graphLeft = graph.offsetLeft
+        this.graphTop = graph.offsetTop
+
+        this.nodeList = Array.from(graph.children)
+
+        this.count = 0
+
         // x, y轴最大距离  画布的宽高 减去 拖拽元素自身的宽高即为能拖动的最大距离
         this.maxX = graph.clientWidth - this.dragDom.clientWidth
         this.maxY = graph.clientHeight - this.dragDom.clientHeight
-        
-        // 拖拽元素离body的距离
-        this.dragOffsetX = this.dragDom.offsetLeft
-        this.dragOffsetY = this.dragDom.offsetTop
 
         this.init()
     }
@@ -20,9 +23,18 @@ class DragElement {
         let fn = null
 
         this.dragDom.addEventListener('mousedown', e => {
-            // 存储 第一次鼠标点击 在DOM内的坐标
-            this.offsetX = e.offsetX
-            this.offsetY = e.offsetY
+            // 存储点击时  左上角的坐标
+            this.startX = e.pageX - this.graphLeft - this.dragDom.offsetLeft
+            this.startY = e.pageY - this.graphTop - this.dragDom.offsetTop
+
+            // 提高当前点击元素 优先级
+            this.nodeList.forEach(div => {
+                div.style.zIndex = '0'
+            })
+            
+            this.count++
+
+            this.dragDom.style.zIndex += this.count
 
             fn = this.calculate.bind(this, ...arguments)
 
@@ -35,12 +47,8 @@ class DragElement {
     }
 
     calculate(e) {
-        // 计算拖拽的 DOM 左上角的坐标
-        const moveX = e.pageX - this.offsetX
-        const moveY = e.pageY - this.offsetY
-        // 减去一开始的坐标, 为移动的距离
-        let x = moveX - this.dragOffsetX
-        let y = moveY - this.dragOffsetY
+        let x = e.pageX - this.graphLeft - this.startX
+        let y = e.pageY - this.graphTop - this.startY
 
         // 边界值处理
         if (x <= 0) x = 0
@@ -52,5 +60,3 @@ class DragElement {
         this.dragDom.style.left = x + 'px'
     }
 }
-
-console.log(1111);
