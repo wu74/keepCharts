@@ -1,62 +1,110 @@
+let count = 0         // 层级计数
+let maxMapping = {}   // 边界值
+let colors = [        // 颜色
+    '#409EFF',
+    '#67C23A',
+    '#E6A23C', 
+    '#F56C6C', 
+    '#909399'
+]
+// 存储事件
+let mousemoveListener = null
+let mousedownListener = null
+
 class DragElement {
-    constructor(dragSelector, containerSelector) {
-        // 获取 DOM 节点
-        const graph = document.querySelector(containerSelector)
-        this.dragDom = document.querySelector(dragSelector)
+    constructor(containerSelector, childrenNum) {
+        // 获取 容器 节点
+        this.graph = document.querySelector(containerSelector)
 
-        this.graphLeft = graph.offsetLeft
-        this.graphTop = graph.offsetTop
+        this.graphLeft = this.graph.offsetLeft
+        this.graphTop = this.graph.offsetTop
 
-        this.nodeList = Array.from(graph.children)
+        // 根据传入的数量创建子节点
+        this.creatElement(childrenNum)
 
-        this.count = 0
+        // 存储子元素
+        this.nodeList = Array.from(this.graph.children)
 
-        // x, y轴最大距离  画布的宽高 减去 拖拽元素自身的宽高即为能拖动的最大距离
-        this.maxX = graph.clientWidth - this.dragDom.clientWidth
-        this.maxY = graph.clientHeight - this.dragDom.clientHeight
-
-        this.init()
+        // 绑定事件
+        this.bindEvent()
     }
 
-    init() {
-        // 存储 move 事件, 方便解绑
-        let fn = null
+    bindEvent() {
+        const children = this.nodeList
 
-        this.dragDom.addEventListener('mousedown', e => {
-            // 存储点击时  左上角的坐标
-            this.startX = e.pageX - this.graphLeft - this.dragDom.offsetLeft
-            this.startY = e.pageY - this.graphTop - this.dragDom.offsetTop
+        for( let i = 0; i < children.length; i++) {
+            // 存储边界值
+            let className = children[i].className
+            if (!maxMapping[className]) maxMapping[className] = [0, 0]
+            let x = this.graph.clientWidth - children[i].clientWidth
+            let y = this.graph.clientHeight - children[i].clientHeight
+            maxMapping[className] = [x, y]
 
-            // 提高当前点击元素 优先级
-            this.nodeList.forEach(div => {
-                div.style.zIndex = '0'
-            })
+            mousedownListener = mousedownFn.bind(this, [...arguments].concat(children[i]))
             
-            this.count++
-
-            this.dragDom.style.zIndex += this.count
-
-            fn = this.calculate.bind(this, ...arguments)
-
-            document.addEventListener('mousemove', fn)
+            // 绑定按下事件
+            children[i].addEventListener('mousedown', mousedownListener)
+        }
+        
+        document.addEventListener('mouseup', () => {
+            // 抬起时解绑事件
+            document.removeEventListener('mousemove', mousemoveListener)
+            document.removeEventListener('mousedown', mousedownListener)
         })
 
-        document.addEventListener('mouseup', e => {
-            document.removeEventListener('mousemove', fn)
-        })
+        function mousedownFn(elem, e) {
+            console.log('执行了一次');
+            let curNode = elem[0]
+
+            // 存储点击时  左上角的坐标
+            this.startX = e.pageX - this.graphLeft - curNode.offsetLeft
+            this.startY = e.pageY - this.graphTop - curNode.offsetTop
+
+            // 设置层级
+            count++
+            curNode.style.zIndex = count
+
+            // 绑定移动事件
+            mousemoveListener = mousemoveFn.bind(this, ...arguments)
+            document.addEventListener('mousemove', mousemoveListener)
+        }
+
+        function mousemoveFn() {
+            this.calculate.call(this, ...arguments)
+        }
     }
 
-    calculate(e) {
+    creatElement(length) {
+        let frag = document.createDocumentFragment()
+
+        for (let i = 0; i < length; i++) {4
+            const tempDiv = document.createElement('div')
+            tempDiv.className = `rect drag${i + 1}`
+            tempDiv.innerText = `div${i + 1}`
+            tempDiv.style.backgroundColor = colors[length - i]
+            tempDiv.style.top = i * 50 + 'px'
+            tempDiv.style.cursor = 'pointer'
+            tempDiv.style.userSelect = 'none'
+            frag.appendChild(tempDiv)
+        }
+
+        this.graph.appendChild(frag)
+    }
+
+    calculate() {
+        let curNode = arguments[0][0]
+        let e = arguments[2]
         let x = e.pageX - this.graphLeft - this.startX
         let y = e.pageY - this.graphTop - this.startY
 
+        const [maxX, maxY] = maxMapping[curNode.className]
         // 边界值处理
         if (x <= 0) x = 0
         if (y <= 0) y = 0
-        if (x >= this.maxX) x = this.maxX
-        if (y >= this.maxY) y = this.maxY
+        if (x >= maxX) x = maxX
+        if (y >= maxY) y = maxY
 
-        this.dragDom.style.top = y + 'px'
-        this.dragDom.style.left = x + 'px'
+        curNode.style.top = y + 'px'
+        curNode.style.left = x + 'px'
     }
 }
