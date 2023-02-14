@@ -3,13 +3,15 @@ let maxMapping = {}   // 边界值
 let colors = [        // 颜色
     '#409EFF',
     '#67C23A',
-    '#E6A23C', 
-    '#F56C6C', 
+    '#E6A23C',
+    '#F56C6C',
     '#909399'
 ]
 // 存储事件
 let mousemoveListener = null
-let mousedownListener = null
+// 之前不用数组, 会造成该变量存储的永远是最后一个节点的事件, 需要分开存储每一个节点单独的事件
+let mousedownListener = []
+let mouseupListener = null
 
 class DragElement {
     constructor(containerSelector, childrenNum) {
@@ -29,10 +31,25 @@ class DragElement {
         this.bindEvent()
     }
 
+    unBindEvent() {
+        // 防止重复绑定
+        document.removeEventListener('mouseup', mouseupListener)
+
+        const children = this.nodeList
+
+        for (let i = 0; i < children.length; i++) {
+            // 解绑每个元素的按下事件
+            children[i].removeEventListener('mousedown', mousedownListener[i])
+        }
+
+        // 清空存储数组, 防止单个节点存储多个重复事件
+        mousedownListener = []
+    }
+
     bindEvent() {
         const children = this.nodeList
 
-        for( let i = 0; i < children.length; i++) {
+        for (let i = 0; i < children.length; i++) {
             // 存储边界值
             let className = children[i].className
             if (!maxMapping[className]) maxMapping[className] = [0, 0]
@@ -40,20 +57,20 @@ class DragElement {
             let y = this.graph.clientHeight - children[i].clientHeight
             maxMapping[className] = [x, y]
 
-            mousedownListener = mousedownFn.bind(this, [...arguments].concat(children[i]))
-            
+            let tempFn = mousedownFn.bind(this, [...arguments].concat(children[i]))
+            mousedownListener.push(tempFn) 
+
             // 绑定按下事件
-            children[i].addEventListener('mousedown', mousedownListener)
+            children[i].addEventListener('mousedown', tempFn)
         }
-        
-        document.addEventListener('mouseup', () => {
+
+        mouseupListener = () => {
             // 抬起时解绑事件
             document.removeEventListener('mousemove', mousemoveListener)
-            document.removeEventListener('mousedown', mousedownListener)
-        })
+        }
+        document.addEventListener('mouseup', mouseupListener)
 
         function mousedownFn(elem, e) {
-            console.log('执行了一次');
             let curNode = elem[0]
 
             // 存储点击时  左上角的坐标
@@ -74,14 +91,17 @@ class DragElement {
         }
     }
 
-    creatElement(length) {
+    creatElement(length, type) {
         let frag = document.createDocumentFragment()
 
-        for (let i = 0; i < length; i++) {4
+        let startIdx = type === 'add' ? this.nodeList?.length : 0
+        let endIdx = type === 'add' ? startIdx + length : length
+
+        for (let i = startIdx; i < endIdx; i++) {
             const tempDiv = document.createElement('div')
             tempDiv.className = `rect drag${i + 1}`
             tempDiv.innerText = `div${i + 1}`
-            tempDiv.style.backgroundColor = colors[length - i]
+            tempDiv.style.backgroundColor = colors[endIdx - i]
             tempDiv.style.top = i * 50 + 'px'
             tempDiv.style.cursor = 'pointer'
             tempDiv.style.userSelect = 'none'
@@ -89,6 +109,9 @@ class DragElement {
         }
 
         this.graph.appendChild(frag)
+
+        // 如果是新增节点, 更新子节点列表
+        type === 'add' && (this.nodeList = Array.from(this.graph.children))
     }
 
     calculate() {
@@ -106,5 +129,29 @@ class DragElement {
 
         curNode.style.top = y + 'px'
         curNode.style.left = x + 'px'
+    }
+
+    addNode(length = 1) {
+        this.creatElement(length, 'add')
+        this.unBindEvent()
+        this.bindEvent()
+    }
+
+    getNodes() {
+        return this.nodeList
+    }
+
+    deleteNode(sel) {
+        const children = this.nodeList
+
+        children.forEach(child => {
+            if (child.className.includes(sel)) {
+                child.remove()
+            }
+        })
+    }
+
+    queryNode(sel) {
+        return this.graph.querySelector(sel)
     }
 }

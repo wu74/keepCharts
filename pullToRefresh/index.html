@@ -35,68 +35,80 @@
             border-bottom: 1px solid #ccc;
         }
 
-        /* .loading-wrap {
-            position: relative;
-            width: 100%;
-            height: 70px;
-            font-size: 12px;
-            text-align: center;
-            line-height: 70px;
-            background-color: #fafbfc;
-        } */
-
         .content-wrap {
             position: relative;
             top: -70px;
             left: 0;
+
+            /* width: 100px;
+            height: 100px;
+            background-color: red;
+            display: flex;
+            justify-content: space-around; */
         }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <div class="content-wrap">
-            <ul>
-                <li>A</li>
-                <li>B</li>
-                <li>C</li>
-                <li>D</li>
-                <li>E</li>
-                <li>F</li>
-                <li>G</li>
-                <li>H</li>
-                <li>I</li>
-                <li>J</li>
-                <li>K</li>
-                <li>L</li>
-                <li>M</li>
-                <li>N</li>
-                <li>O</li>
-                <li>P</li>
-                <li>Q</li>
-                <li>R</li>
-                <li>S</li>
-                <li>T</li>
-                <li>U</li>
-                <li>V</li>
-            </ul>
-        </div>
+        <!-- flex布局情况 -->
+
+        <!-- <div class="rect">1</div>
+        <div class="rect">2</div>
+        <div class="rect">3</div> -->
+        
+        <!-- 列表情况 -->
+        <ul>
+            <li>A</li>
+            <li>B</li>
+            <li>C</li>
+            <li>D</li>
+            <li>E</li>
+            <li>F</li>
+            <li>G</li>
+            <li>H</li>
+            <li>I</li>
+            <li>J</li>
+            <li>K</li>
+            <li>L</li>
+            <li>M</li>
+            <li>N</li>
+            <li>O</li>
+            <li>P</li>
+            <li>Q</li>
+            <li>R</li>
+            <li>S</li>
+            <li>T</li>
+            <li>U</li>
+            <li>V</li>
+        </ul>
     </div>
     <script src="./index.js"></script>
     <script>
-        let pull = new pullToRefresh('.content-wrap', fn, {
+        let pull = new pullToRefresh('.container',  {
             canReleaseText: '释放立即刷新',
             completeText: '刷新成功',
             pullingText: '下拉刷新',
-            refreshingText: '刷新中...'
+            refreshingText: '刷新中...',
+            headHeight: 50
         })
 
-        // 自定义回调, 暂时未完成
-        function fn() {
+        pull.onRefresh = function () {
             setTimeout(() => {
                 console.log('刷新成功');
+                pull.setState('finish')
+                // pull.setState('failed')
             }, 2000);
         }
+
+        // 界定需要分开的部分 --- 边界
+        // 交互 -- 状态的同步
+
+
+        // 拖拽
+        // 1. 基础拖拽需求
+        // 2. 下拉刷新也是拖拽的一种
+
     </script>
 </body>
 
