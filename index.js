@@ -1,11 +1,12 @@
 class pullToRefresh {
-    constructor(containerSel, cb, options) {
+    constructor(containerSel, options) {
         // 获取容器 DOM
         this.contentDom = document.querySelector(containerSel)
         // 保存配置和回调
         this.options = options
-        this.fn = cb
+        // this.onRefresh = cb
         this.totalScrollTop = 0
+        this.state = null
 
         // 创建loading DOM
         this.creatLoadingDom()
@@ -16,6 +17,19 @@ class pullToRefresh {
 
         // 绑定事件
         this.bindEvent()
+    }
+    setState(state) {
+        if (state == 'pending') {
+            this.loadingDom.innerHTML = this.options.refreshingText
+            this.contentDom.style.transition = 'top 0.5s'
+            this.contentDom.style.top = '-70px'
+
+            // this.contentDom.removeEventListener('touchmove', touchMove)
+
+            // 重置部分初始值
+            this.totalScrollTop = 0
+            this.scrolledNum = -this.maxScrollNum
+        }
     }
 
     creatLoadingDom() {
@@ -71,20 +85,22 @@ class pullToRefresh {
         const touchEnd = () => {
             this.loadingDom.innerHTML = this.options.refreshingText
 
-            setTimeout(() => {
-                this.loadingDom.innerHTML = this.options.completeText
+            // setTimeout(() => {
+            //     this.loadingDom.innerHTML = this.options.completeText
         
-                setTimeout(() => {
-                    this.contentDom.style.transition = 'top 0.5s'
-                    this.contentDom.style.top = '-70px'
+            //     setTimeout(() => {
+            //         this.contentDom.style.transition = 'top 0.5s'
+            //         this.contentDom.style.top = '-70px'
         
-                    this.contentDom.removeEventListener('touchmove', touchMove)
+            //         this.contentDom.removeEventListener('touchmove', touchMove)
 
-                    // 重置部分初始值
-                    this.totalScrollTop = 0
-                    this.scrolledNum = -this.maxScrollNum
-                }, 500)
-            }, 1000)
+            //         // 重置部分初始值
+            //         this.totalScrollTop = 0
+            //         this.scrolledNum = -this.maxScrollNum
+            //     }, 500)
+            // }, 1000)
+            this.onPre()
+            this.onRefresh()
         }
 
         const touchStart = e => {
@@ -101,5 +117,12 @@ class pullToRefresh {
 
         document.addEventListener('touchstart', touchStart)
         document.addEventListener('touchend', touchEnd)
+    }
+
+    onRefresh() {
+
+    }
+
+    onPre() {
     }
 }

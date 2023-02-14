@@ -54,7 +54,7 @@
 </head>
 
 <body>
-    <div class="container">
+    <!-- <div class="container"> -->
         <div class="content-wrap">
             <ul>
                 <li>A</li>
@@ -81,22 +81,36 @@
                 <li>V</li>
             </ul>
         </div>
-    </div>
+    <!-- </div> -->
     <script src="./index.js"></script>
     <script>
-        let pull = new pullToRefresh('.content-wrap', fn, {
+        let pull = new pullToRefresh('.content-wrap',  {
             canReleaseText: '释放立即刷新',
             completeText: '刷新成功',
             pullingText: '下拉刷新',
             refreshingText: '刷新中...'
         })
 
-        // 自定义回调, 暂时未完成
-        function fn() {
+        pull.onRefresh = function () {
             setTimeout(() => {
                 console.log('刷新成功');
+                console.log(pull, 'pull');
+                pull.setState('pending')
             }, 2000);
         }
+
+        pull.onPre = function() {
+            console.log(123);
+        }
+
+        // 界定需要分开的部分 --- 边界
+        // 交互 -- 状态的同步
+
+
+        // 拖拽
+        // 1. 基础拖拽需求
+        // 2. 下拉刷新也是拖拽的一种
+
     </script>
 </body>
 
