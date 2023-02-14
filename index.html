@@ -35,6 +35,21 @@
     <script src="./index.js"></script>
     <script>
         let drag = new DragElement('#container', 4)
+        drag.addNode(1)
+
+        setTimeout(() => {
+            drag.addNode(1)
+        }, 1000);
+
+        let nodeList = drag.getNodes()
+
+        setTimeout(() => {
+            drag.deleteNode('drag2')
+        }, 2000)
+
+        let dragNode = drag.queryNode('.drag3')
+
+        console.log(dragNode, '节点3');
     </script>
 </body>
 </html>
