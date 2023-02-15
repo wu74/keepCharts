@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>drag</title>
+
+    <style>
+        .container {
+            width: 80%;
+            height: 400px;
+            background-color: #f0f5ff;
+        }
+
+        .rect {
+            width: 100px;
+            height: 100px;
+            background-color: #5cdbd3;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="rect"></div>
+    </div>
+    <script src="../index.js"></script>
+    <script>
+        let dragRect = new commonDrag('.rect', {
+            // 拖拽是否限制边界, 如果有 传入边界的dom类名
+            containerClass: '.container',
+            // 是否有方向限制
+            dragDirection: 'none',
+            // 是否立即执行 事件绑定
+            bindEventImmediately: true
+        })
+    </script>
+</body>
+
+</html>
