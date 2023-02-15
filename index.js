@@ -1,157 +1,194 @@
-let count = 0         // 层级计数
-let maxMapping = {}   // 边界值
-let colors = [        // 颜色
-    '#409EFF',
-    '#67C23A',
-    '#E6A23C',
-    '#F56C6C',
-    '#909399'
-]
-// 存储事件
-let mousemoveListener = null
-// 之前不用数组, 会造成该变量存储的永远是最后一个节点的事件, 需要分开存储每一个节点单独的事件
-let mousedownListener = []
-let mouseupListener = null
+class commonDrag {
+    constructor(sel, options) {
+        this.dragDom = document.querySelector(sel)
 
-class DragElement {
-    constructor(containerSelector, childrenNum) {
-        // 获取 容器 节点
-        this.graph = document.querySelector(containerSelector)
+        this.dragDom.style.userSelect = 'none'
+        this.dragDom.style.position = 'relative'
 
-        this.graphLeft = this.graph.offsetLeft
-        this.graphTop = this.graph.offsetTop
+        this.options = options
 
-        // 根据传入的数量创建子节点
-        this.creatElement(childrenNum)
+        this.startPos = {}
 
-        // 存储子元素
-        this.nodeList = Array.from(this.graph.children)
-
-        // 绑定事件
-        this.bindEvent()
-    }
-
-    unBindEvent() {
-        // 防止重复绑定
-        document.removeEventListener('mouseup', mouseupListener)
-
-        const children = this.nodeList
-
-        for (let i = 0; i < children.length; i++) {
-            // 解绑每个元素的按下事件
-            children[i].removeEventListener('mousedown', mousedownListener[i])
+        if (this.options.bindEventImmediately) {
+            this.bindEvent()
         }
-
-        // 清空存储数组, 防止单个节点存储多个重复事件
-        mousedownListener = []
     }
 
     bindEvent() {
-        const children = this.nodeList
+        // 执行 开始拖拽前 钩子函数
+        this.beforeDrag()
+        // 判断是否是移动端 或者 PC端
+        let isMobile = this.isMobile()
 
-        for (let i = 0; i < children.length; i++) {
-            // 存储边界值
-            let className = children[i].className
-            if (!maxMapping[className]) maxMapping[className] = [0, 0]
-            let x = this.graph.clientWidth - children[i].clientWidth
-            let y = this.graph.clientHeight - children[i].clientHeight
-            maxMapping[className] = [x, y]
+        // 初始化事件名称
+        let startEventName = isMobile ? 'touchstart' : 'mousedown'
+        let moveEventName = isMobile ? 'touchmove' : 'mousemove'
+        let endEventName = isMobile ? 'touchend' : 'mouseup'
 
-            let tempFn = mousedownFn.bind(this, [...arguments].concat(children[i]))
-            mousedownListener.push(tempFn) 
+        const dragStart = e => {
+            // 执行 拖拽开始 钩子函数
+            this.onDragStart()
 
-            // 绑定按下事件
-            children[i].addEventListener('mousedown', tempFn)
-        }
+            // 如果限制了拖拽范围, 计算边界值
+            if (this.options.containerClass) this.calculateDragRange()
 
-        mouseupListener = () => {
-            // 抬起时解绑事件
-            document.removeEventListener('mousemove', mousemoveListener)
-        }
-        document.addEventListener('mouseup', mouseupListener)
+            // 记录下第一次点击时候的坐标
+            if (isMobile) {
+                const { clientX, clientY } = e.touches[0]
 
-        function mousedownFn(elem, e) {
-            let curNode = elem[0]
+                let x = clientX
+                let y = clientY
 
-            // 存储点击时  左上角的坐标
-            this.startX = e.pageX - this.graphLeft - curNode.offsetLeft
-            this.startY = e.pageY - this.graphTop - curNode.offsetTop
+                if (this.options.containerClass) {
+                    x = x - this.graph.offsetLeft - this.dragDom.offsetLeft
+                    y = y - this.graph.offsetTop - this.dragDom.offsetTop
+                }
 
-            // 设置层级
-            count++
-            curNode.style.zIndex = count
+                this.startPos = {
+                    x,
+                    y
+                }
+            } else {
+                const { pageX, pageY } = e
 
-            // 绑定移动事件
-            mousemoveListener = mousemoveFn.bind(this, ...arguments)
-            document.addEventListener('mousemove', mousemoveListener)
-        }
+                let x = pageX
+                let y = pageY
 
-        function mousemoveFn() {
-            this.calculate.call(this, ...arguments)
-        }
-    }
+                if (this.options.containerClass) {
+                    x = x - this.graph.offsetLeft - this.dragDom.offsetLeft
+                    y = y - this.graph.offsetTop - this.dragDom.offsetTop
+                }
 
-    creatElement(length, type) {
-        let frag = document.createDocumentFragment()
-
-        let startIdx = type === 'add' ? this.nodeList?.length : 0
-        let endIdx = type === 'add' ? startIdx + length : length
-
-        for (let i = startIdx; i < endIdx; i++) {
-            const tempDiv = document.createElement('div')
-            tempDiv.className = `rect drag${i + 1}`
-            tempDiv.innerText = `div${i + 1}`
-            tempDiv.style.backgroundColor = colors[endIdx - i]
-            tempDiv.style.top = i * 50 + 'px'
-            tempDiv.style.cursor = 'pointer'
-            tempDiv.style.userSelect = 'none'
-            frag.appendChild(tempDiv)
-        }
-
-        this.graph.appendChild(frag)
-
-        // 如果是新增节点, 更新子节点列表
-        type === 'add' && (this.nodeList = Array.from(this.graph.children))
-    }
-
-    calculate() {
-        let curNode = arguments[0][0]
-        let e = arguments[2]
-        let x = e.pageX - this.graphLeft - this.startX
-        let y = e.pageY - this.graphTop - this.startY
-
-        const [maxX, maxY] = maxMapping[curNode.className]
-        // 边界值处理
-        if (x <= 0) x = 0
-        if (y <= 0) y = 0
-        if (x >= maxX) x = maxX
-        if (y >= maxY) y = maxY
-
-        curNode.style.top = y + 'px'
-        curNode.style.left = x + 'px'
-    }
-
-    addNode(length = 1) {
-        this.creatElement(length, 'add')
-        this.unBindEvent()
-        this.bindEvent()
-    }
-
-    getNodes() {
-        return this.nodeList
-    }
-
-    deleteNode(sel) {
-        const children = this.nodeList
-
-        children.forEach(child => {
-            if (child.className.includes(sel)) {
-                child.remove()
+                this.startPos = {
+                    x,
+                    y
+                }
             }
-        })
+
+            // 添加 move 事件
+            document.addEventListener(moveEventName, dragMove)
+        }
+
+        const dragMove = e => {
+            let nowPos
+
+            if (isMobile) {
+                const { clientX, clientY } = e.touches[0]
+
+                nowPos = {
+                    x: clientX,
+                    y: clientY
+                }
+            } else {
+                const { pageX, pageY } = e
+
+                nowPos = {
+                    x: pageX,
+                    y: pageY
+                }
+
+            }
+
+            let direction = this.calculateDirection(nowPos)
+
+            if (this.options.dragDirection == 'none' || direction === this.options.dragDirection) {
+                this.calculateMove(nowPos)
+            }
+        }
+
+        const dragEnd = e => {
+            // 执行 拖拽结束 钩子函数
+            this.onDragEnd()
+
+            // 解绑事件
+            document.removeEventListener(moveEventName, dragMove)
+        }
+
+        this.dragDom.addEventListener(startEventName, dragStart)
+        document.addEventListener(endEventName, dragEnd)
     }
 
-    queryNode(sel) {
-        return this.graph.querySelector(sel)
+    calculateDragRange() {
+        if (!this.options.containerClass) return
+
+        let graph = document.querySelector(this.options.containerClass)
+        graph.style.position = 'relative'
+        this.graph = graph
+
+        let graphWidth = graph.clientWidth
+        let graphHeight = graph.clientHeight
+
+        const dragWidth = this.dragDom.clientWidth
+        const dragHeight = this.dragDom.clientHeight
+
+        this.maxX = graphWidth - dragWidth
+        this.maxY = graphHeight - dragHeight
     }
+
+    calculateDirection(endPos) {
+        if (this.options.containerClass) {
+            const w = this.dragDom.offsetWidth
+            const h = this.dragDom.offsetHeight
+            var x = (endPos.x - this.dragDom.offsetLeft - (w / 2)) * (w > h ? (h / w) : 1),
+                y = (endPos.y - this.dragDom.offsetTop - (h / 2)) * (h > w ? (w / h) : 1),
+                // 上(0) 右(1) 下(2) 左(3)
+                direction = Math.round((((Math.atan2(y, x) * (180 / Math.PI)) + 180) / 90) + 3) % 4
+
+            return ['up', 'right', 'down', 'left'][direction]
+        } else {
+            const { x, y } = this.startPos
+
+            // if (endPos.x - x > 0) {
+            //     return 'right'
+            // } else if (endPos.x - x < 0) {
+            //     return 'left'
+            // } else 
+            if (endPos.y - y > 0) {
+                return 'down'
+            } else if (endPos.y - y < 0) {
+                return 'up'
+            }
+        }
+
+    }
+
+    calculateMove(nowPos) {
+        let x = nowPos.x - this.startPos.x
+        let y = nowPos.y - this.startPos.y
+
+        // 拖拽是否限制范围
+        if (this.options.containerClass) {
+            x = x - this.graph.offsetLeft
+            y = y - this.graph.offsetTop
+
+            // 边界值处理
+            if (x < 0) x = 0
+            if (y < 0) y = 0
+
+            if (x > this.maxX) x = this.maxX
+            if (y > this.maxY) y = this.maxY
+        }
+        // 执行 拖拽中 钩子函数
+        if (this.options.customMoveFn) {
+            this.onDragMove(x, y)
+            return
+        }
+
+        this.dragDom.style.top = y + 'px'
+        this.dragDom.style.left = x + 'px'
+    }
+
+    isMobile() {
+        return navigator.userAgent.includes('Mobile') ||
+            navigator.userAgent.includes('Android') ||
+            navigator.userAgent.includes('iPhone')
+    }
+
+    beforeDrag() { }
+
+    onDragStart() { }
+
+    onDragMove() { }
+
+    onDragEnd() { }
 }

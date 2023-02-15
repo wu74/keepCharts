@@ -5,110 +5,142 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>keepCharts</title>
+    <title>pullToRefresh</title>
+
     <style>
-        html,
-        body {
-            margin: 0;
-            padding: 0;
-        }
-
         .container {
-            width: 200px;
+            width: 500px;
             height: 400px;
-            margin: 50px auto;
-            overflow-y: scroll;
-            border: 1px solid #ddd;
-        }
-
-        ul {
-            margin: 0;
-            padding: 0;
-        }
-
-        li {
-            width: 100%;
-            height: 30px;
-            text-align: center;
-            line-height: 30px;
-            list-style: none;
-            border-bottom: 1px solid #ccc;
-        }
-
-        .content-wrap {
-            position: relative;
-            top: -70px;
-            left: 0;
-
-            /* width: 100px;
-            height: 100px;
-            background-color: red;
-            display: flex;
-            justify-content: space-around; */
+            background-color: #bae0ff;
         }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <!-- flex布局情况 -->
 
-        <!-- <div class="rect">1</div>
-        <div class="rect">2</div>
-        <div class="rect">3</div> -->
-        
-        <!-- 列表情况 -->
-        <ul>
-            <li>A</li>
-            <li>B</li>
-            <li>C</li>
-            <li>D</li>
-            <li>E</li>
-            <li>F</li>
-            <li>G</li>
-            <li>H</li>
-            <li>I</li>
-            <li>J</li>
-            <li>K</li>
-            <li>L</li>
-            <li>M</li>
-            <li>N</li>
-            <li>O</li>
-            <li>P</li>
-            <li>Q</li>
-            <li>R</li>
-            <li>S</li>
-            <li>T</li>
-            <li>U</li>
-            <li>V</li>
-        </ul>
     </div>
-    <script src="./index.js"></script>
+    <script src="../index.js"></script>
     <script>
-        let pull = new pullToRefresh('.container',  {
-            canReleaseText: '释放立即刷新',
-            completeText: '刷新成功',
-            pullingText: '下拉刷新',
-            refreshingText: '刷新中...',
-            headHeight: 50
+        let pullDown = new commonDrag('.container', {
+            // 限制拖拽方向
+            dragDirection: 'down',
+            // 需要对拖拽时 移动部分进行自定义处理
+            customMoveFn: true,
+            // 是否立即绑定事件
+            bindEventImmediately: false,
+            // 最大拖拽距离
+            maxDragDistance: 50
         })
 
-        pull.onRefresh = function () {
-            setTimeout(() => {
-                console.log('刷新成功');
-                pull.setState('finish')
-                // pull.setState('failed')
-            }, 2000);
+        pullDown.beforeDrag = function () {
+            const rootDom = document.querySelector('.container')
+            // 创建loading DOM 的容器
+            let headDom = document.createElement('div')
+            headDom.className = 'head_dom'
+            headDom.style.cssText = `
+                position: relative;
+                overflow: hidden;
+                background-color: #fafbfc;
+            `
+            this.headDom = headDom
+
+            // 创建用户自己的 DOM 的容器
+            let contentDom = document.createElement('div')
+            contentDom.className = 'content_dom'
+
+
+            // 把用户的dom 移入到容器里面
+            let children = rootDom.children
+            let len = children.length
+            while (len) {
+                contentDom.appendChild(children[0])
+                len--
+            }
+
+            // 创建 loading DOM
+            let loadingDom = document.createElement('div')
+            loadingDom.innerText = '下拉刷新'
+            loadingDom.style.cssText = `
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: 50px;
+                font-size: 12px;
+                text-align: center;
+                line-height: 50px;
+            `
+            this.loadingDom = loadingDom
+            headDom.appendChild(loadingDom)
+
+            // 添加到 根容器
+            rootDom.appendChild(headDom)
+            rootDom.appendChild(contentDom)
         }
 
-        // 界定需要分开的部分 --- 边界
-        // 交互 -- 状态的同步
+        pullDown.onDragStart = function () {
+            console.log('dragStart开始');
+            this.headDom.style.transition = ''
+        }
 
+        pullDown.onDragMove = function (x, y) {
+            if (!this.totalPullNum) this.totalPullNum = 0
+            if (!this.headHeight) this.headHeight = this.options.maxDragDistance || 40
 
-        // 拖拽
-        // 1. 基础拖拽需求
-        // 2. 下拉刷新也是拖拽的一种
+            let scrollHeight = 1
 
+            if (this.totalPullNum > this.headHeight * 0.5 &&
+                this.totalPullNum < this.headHeight * 2) {
+                scrollHeight = 0.5
+            } else if (this.totalPullNum > this.headHeight * 2) {
+                scrollHeight = 0.25
+            }
+
+            if (this.totalPullNum > this.headHeight * 0.8) {
+                this.loadingDom.innerHTML = '释放立即刷新'
+            }
+
+            // 计算滚动距离
+            this.totalPullNum += scrollHeight
+
+            this.headDom.style.height = this.totalPullNum + 'px'
+        }
+
+        pullDown.onDragEnd = function () {
+            // 当前下拉距离超过 headHeight 需要复原高度
+            if (this.totalPullNum > this.headHeight) {
+                this.headDom.style.transition = 'height 0.2s'
+                this.headDom.style.height = this.headHeight + 'px'
+            }
+
+            // 有效滚动的情况下才去执行回调
+            if (this.totalPullNum) {
+                this.loadingDom.innerHTML = '刷新中'
+                this.totalPullNum = 0
+                this.onRefresh()
+            }
+        }
+
+        pullDown.onRefresh = function () {
+            setTimeout(() => {
+                console.log('请求成功');
+                pullDown.setState('finish')
+            }, 2000)
+        }
+
+        pullDown.setState = function (state) {
+            if (state === 'finish') {
+                this.loadingDom.innerHTML = '刷新成功'
+
+                setTimeout(() => {
+                    this.headDom.style.transition = 'height 0.5s'
+                    this.headDom.style.height = '0px'
+                }, 1000);
+            }
+        }
+
+        pullDown.bindEvent()
     </script>
 </body>
 
