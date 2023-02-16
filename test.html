@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>canvas</title>
+</head>
+
+<body>
+  <!--  -->
+  <canvas id="graph" width="900px" height="400px"></canvas>
+
+
+  <script>
+    // 1. 获取画布
+    const graph = document.querySelector('#graph')
+
+    // 2. 获取画笔, 上下文对象
+    const ctx = graph.getContext('2d')
+
+    // 兼容性判断  可以 判断是否有 getContext 方法
+    console.log(ctx, 'ctx');
+
+    // 3. 绘制图形
+
+    // 3.1 矩形  fillRect(x坐标, y坐标, 宽, 高) --> 填充模式
+    ctx.fillRect(0, 0, 50, 50)
+    ctx.fillStyle = 'rgb(10, 171, 98)'
+    ctx.fill()
+    // 等同于下面这种 拆开的写法
+    // ctx.rect(0, 0, 50, 50)
+    // ctx.fill()
+    // 3.2 矩形 路径绘制
+    // ctx.strokeRect(60, 0, 50, 50)
+    // 等同于下面这种 拆开的写法
+    // ctx.rect(60, 0, 50, 50)
+    // ctx.stroke()
+
+    // 3.3 矩形 清除矩形内部的内容
+    // ctx.clearRect(0, 0, 111, 100)
+
+    // let height = 0
+    // let timer = setInterval(() => {
+    //   height++
+
+    //   if (height >= 50) {
+    //     clearInterval(timer)
+    //   }
+
+    //   ctx.clearRect(0, 0, graph.clientWidth, height)
+    // }, 50);
+
+
+    // 如果是下面这种顺序来画两个矩形, 则会两个矩形都被填充
+    // 因为你没有分段的话  它默认你是连笔画的  算一个图形 所以都会填充
+    // 解决办法 可以 用beginPath  closePath 告诉画布: 开始画->画完了->抬起笔了
+    // 这样就正常了
+    // ctx.beginPath()
+    // ctx.rect(60, 0, 50, 50)
+    // ctx.stroke()
+    // ctx.closePath()
+
+    // ctx.beginPath()
+    // ctx.rect(0, 0, 50, 50)
+    // ctx.fill()
+    // ctx.closePath()
+
+    // 圆弧
+    // ctx.arc(10, 0, 10, 0, Math.PI / 2)
+    // ctx.stroke()
+
+    
+  </script>
+</body>
+
+</html>
