@@ -20,24 +20,38 @@ class Pen {
         return this
     }
 
+    fillRect(x, y, width, height, color) {
+        color && (this.ctx.fillStyle = color)
+        this.ctx.fillRect(x, y, width, height)
+    }
+
     drawLine(sx, sy, ex, ey, color, lineDash) {
         this.ctx.beginPath()
         lineDash && (this.ctx.setLineDash(lineDash))
+        color && (this.ctx.strokeStyle = color)
 
         this.ctx.moveTo(sx, sy)
         this.ctx.lineTo(ex, ey)
-        color && (this.ctx.strokeStyle = color)
         this.ctx.stroke()
-
         return this
     }
 
-    drawCandle(sx, sy, width, height, type, color, candleSY, candleEY) {
+    drawCandle(sx, sy, width, height, type, color, direction , candleSY, candleEY) {
         // 先保存 竖线的x坐标
         let lineX = sx + Math.floor(width / 2)
 
         // 蜡烛图 竖线的 y 坐标应该是由数据确定的, 这里先留个位置
         this.drawRect(sx, sy, width, height, type, color)
+
+        if (type === 'stroke') {
+            if (direction === 'up') {
+                this.drawLine(lineX, sy - 20, lineX, sy, color)
+            } else {
+                this.drawLine(lineX, sy + height, lineX, sy + height + 20, color)
+            }
+            return this
+        }
+
         this.drawLine(lineX, sy - 20, lineX, sy + height + 20, color)
         return this
     }

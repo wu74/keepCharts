@@ -7,98 +7,591 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>k</title>
   <style>
+    #container {
+      position: relative;
+      width: 900px;
+      height: 400px;
+    }
+
     #hoverTip {
       display: none;
       position: absolute;
       top: 50px;
       width: 190px;
       height: 270px;
-      background-color: rgba(243, 245, 250, .5);
+      padding: 15px;
+      box-sizing: border-box;
+      font-size: 12px;
+      color: #636363;
+      background-color: rgba(243, 245, 250, .8);
+    }
+
+    #hoverTip p {
+      display: flex;
+      justify-content: space-around;
     }
   </style>
 </head>
 
 <body>
-  <canvas
-    id="graph"
-    width="930"
-    height="455"
-    style="position: relative;"
-  ></canvas>
+  <div id="container">
+    <canvas id="graph" width="900" height="400"></canvas>
 
-  <div id="hoverTip"></div>
+    <div id="hoverTip"></div>
+  </div>
 
-  <script src="./index.js"></script>
   <script>
+    // 获取 DOM
+    const container = document.querySelector('#container')
     const hoverDom = document.querySelector('#hoverTip')
+    // 获取canvas元素和画笔
+    const c = document.querySelector('#graph')
+    const ctx = c.getContext('2d')
+    // 平均
+    const perYlen = 126
+    // 需要渲染label的 x 坐标 数组
+    const xAxisList = [150, 300, 450, 600, 750]
+    // 处理区间数组, 后面绘制阶段性的x轴虚线 和 悬浮框的文本需要用到
+    let rangeArr = []
+    let count = 0
 
-    let pen = new Pen('#graph')
+    while (count < 30) {
+      rangeArr.push([count * 30, (count + 1) * 30])
+      count++
+    }
 
-    // 坐标系
-    pen.drawLine(25, 0, 25, 430)
-      .drawLine(25, 430, 900, 430)
+    // k线图数据
+    const kData = [
+      {
+        "date": "20220713",
+        "time": "1657641600",
+        "open": "142.300",
+        "close": "141.700",
+        "high": "144.900",
+        "low": "141.200",
+        "netChangeRatio": "-0.42"
+      },
+      {
+        "date": "20220720",
+        "time": "1658246400",
+        "open": "140.800",
+        "close": "140.600",
+        "high": "143.700",
+        "low": "139.800",
+        "netChangeRatio": "+2.48"
+      },
+      {
+        "date": "20220727",
+        "time": "1658851200",
+        "open": "136.800",
+        "close": "136.300",
+        "high": "137.200",
+        "low": "135.600",
+        "netChangeRatio": "-2.78"
+      },
+      {
+        "date": "20220803",
+        "time": "1659456000",
+        "open": "133.300",
+        "close": "130.300",
+        "high": "133.300",
+        "low": "129.200",
+        "netChangeRatio": "+1.16"
+      },
+      {
+        "date": "20220810",
+        "time": "1660060800",
+        "open": "133.800",
+        "close": "130.100",
+        "high": "133.800",
+        "low": "128.600",
+        "netChangeRatio": "-3.27"
+      },
+      {
+        "date": "20220817",
+        "time": "1660665600",
+        "open": "134.300",
+        "close": "132.800",
+        "high": "134.600",
+        "low": "130.800",
+        "netChangeRatio": "-0.97"
+      },
+      {
+        "date": "20220824",
+        "time": "1661270400",
+        "open": "131.200",
+        "close": "129.900",
+        "high": "131.600",
+        "low": "127.500",
+        "netChangeRatio": "-0.69"
+      },
+      {
+        "date": "20220831",
+        "time": "1661875200",
+        "open": "136.600",
+        "close": "141.500",
+        "high": "144.800",
+        "low": "135.600",
+        "netChangeRatio": "-3.28"
+      },
+      {
+        "date": "20220907",
+        "time": "1662480000",
+        "open": "131.500",
+        "close": "132.400",
+        "high": "133.300",
+        "low": "130.800",
+        "netChangeRatio": "-3.71"
+      },
+      {
+        "date": "20220915",
+        "time": "1663171200",
+        "open": "127.400",
+        "close": "127.500",
+        "high": "128.000",
+        "low": "126.300",
+        "netChangeRatio": "-0.70"
+      },
+      {
+        "date": "20220922",
+        "time": "1663776000",
+        "open": "117.000",
+        "close": "118.500",
+        "high": "118.900",
+        "low": "114.600",
+        "netChangeRatio": "-2.07"
+      },
+      {
+        "date": "20220929",
+        "time": "1664380800",
+        "open": "118.500",
+        "close": "115.400",
+        "high": "119.700",
+        "low": "113.700",
+        "netChangeRatio": "+1.05"
+      },
+      {
+        "date": "20221007",
+        "time": "1665072000",
+        "open": "120.400",
+        "close": "119.500",
+        "high": "120.900",
+        "low": "119.000",
+        "netChangeRatio": "-2.13"
+      },
+      {
+        "date": "20221014",
+        "time": "1665676800",
+        "open": "105.500",
+        "close": "104.400",
+        "high": "108.300",
+        "low": "103.600",
+        "netChangeRatio": "+2.15"
+      },
+      {
+        "date": "20221021",
+        "time": "1666281600",
+        "open": "91.450",
+        "close": "89.750",
+        "high": "91.750",
+        "low": "89.300",
+        "netChangeRatio": "-1.91"
+      },
+      {
+        "date": "20221028",
+        "time": "1666886400",
+        "open": "79.450",
+        "close": "75.700",
+        "high": "79.450",
+        "low": "74.700",
+        "netChangeRatio": "-5.67"
+      },
+      {
+        "date": "20221104",
+        "time": "1667491200",
+        "open": "75.850",
+        "close": "82.600",
+        "high": "86.550",
+        "low": "75.850",
+        "netChangeRatio": "+8.90"
+      },
+      {
+        "date": "20221111",
+        "time": "1668096000",
+        "open": "84.300",
+        "close": "85.450",
+        "high": "86.000",
+        "low": "82.500",
+        "netChangeRatio": "+9.13"
+      },
+      {
+        "date": "20221118",
+        "time": "1668700800",
+        "open": "95.800",
+        "close": "93.750",
+        "high": "97.650",
+        "low": "92.900",
+        "netChangeRatio": "+0.86"
+      },
+      {
+        "date": "20221125",
+        "time": "1669305600",
+        "open": "95.500",
+        "close": "92.450",
+        "high": "95.500",
+        "low": "91.400",
+        "netChangeRatio": "-3.09"
+      },
+      {
+        "date": "20221202",
+        "time": "1669910400",
+        "open": "106.900",
+        "close": "106.100",
+        "high": "108.400",
+        "low": "104.800",
+        "netChangeRatio": "-0.66"
+      },
+      {
+        "date": "20221209",
+        "time": "1670515200",
+        "open": "116.200",
+        "close": "123.000",
+        "high": "123.500",
+        "low": "116.200",
+        "netChangeRatio": "+5.49"
+      },
+      {
+        "date": "20221216",
+        "time": "1671120000",
+        "open": "110.200",
+        "close": "112.500",
+        "high": "114.600",
+        "low": "109.700",
+        "netChangeRatio": "-0.71"
+      },
+      {
+        "date": "20221223",
+        "time": "1671724800",
+        "open": "108.900",
+        "close": "112.000",
+        "high": "113.500",
+        "low": "108.900",
+        "netChangeRatio": "-0.53"
+      },
+      {
+        "date": "20230104",
+        "time": "1672761600",
+        "open": "118.500",
+        "close": "124.200",
+        "high": "124.600",
+        "low": "116.800",
+        "netChangeRatio": "+8.19"
+      },
+      {
+        "date": "20230111",
+        "time": "1673366400",
+        "open": "132.700",
+        "close": "133.800",
+        "high": "137.300",
+        "low": "131.100",
+        "netChangeRatio": "+2.45"
+      },
+      {
+        "date": "20230118",
+        "time": "1673971200",
+        "open": "128.100",
+        "close": "128.600",
+        "high": "128.700",
+        "low": "125.300",
+        "netChangeRatio": "-2.65"
+      },
+      {
+        "date": "20230130",
+        "time": "1675008000",
+        "open": "136.000",
+        "close": "136.100",
+        "high": "144.900",
+        "low": "133.000",
+        "netChangeRatio": "-0.58"
+      },
+      {
+        "date": "20230206",
+        "time": "1675612800",
+        "open": "137.600",
+        "close": "140.900",
+        "high": "142.900",
+        "low": "136.200",
+        "netChangeRatio": "-2.69"
+      },
+      {
+        "date": "20230213",
+        "time": "1676217600",
+        "open": "136.400",
+        "close": "143.100",
+        "high": "144.900",
+        "low": "135.200",
+        "netChangeRatio": "+1.92"
+      }
+    ]
 
-    // 蜡烛图
-    pen.drawCandle(50, 50, 25, 40, 'fill', 'rgb(10,171,98)')
-      .drawCandle(100, 100, 30, 60, 'fill', 'rgb(255,51,51)')
-      .drawCandle(500, 50, 25, 50, 'fill', 'rgb(10,171,98)')
+    // 初始化 y轴 最大值 和 最小值
+    let maxY = 0
+    let minY = +kData[0].low
 
-    const yData = ['146.3', '120.8', '95.4', '70', '50']
-    const xData = ['20220919',
-      '20220928',
-      '20221010',
-      '20221019',
-      '20221028']
+    render()
 
-    pen.ctx.fillStyle = '#525252'
-    yData.forEach((text, i) => {
-      pen.ctx.textAlign = 'right'
-      pen.ctx.fillText(text, 20, i * 100,)
-    })
-
-    xData.forEach((text, i) => {
-      pen.ctx.textBaseline = 'top'
-      pen.ctx.fillText(text, i * 200, 435)
-    })
-
-    pen.graph.addEventListener('mouseenter', function() {
-      pen.graph.addEventListener('mousemove', mousemoveFn)
-    })
-    pen.graph.addEventListener('mouseleave', function () {
+    const middle = container.clientWidth * 0.5
+    // 绑定事件
+    container.addEventListener('mouseenter', mouseenterFn)
+    container.addEventListener('mouseleave', function () {
       hoverDom.style.display = 'none'
-      pen.graph.removeEventListener('mousemove', mousemoveFn)
+      clearGraph()
+      render()
+      container.removeEventListener('mousemove', mousemoveFn)
     })
 
-
-    let isCreated = false
-
+    function mouseenterFn() {
+      hoverDom.style.display = 'block'
+      container.addEventListener('mousemove', mousemoveFn)
+    }
     function mousemoveFn(e) {
-      let x = e.offsetX
-      let y = e.offsetY
+      // 悬浮框跟着鼠标移动
+      const hoverWidth = hoverDom.clientWidth
+      let x = e.pageX
+      let y = e.pageY
+      let hoverLeft = x
+      if (x > middle) {
+        hoverLeft = x - hoverWidth - 10
+      }
+      hoverDom.style.left = hoverLeft + 'px'
 
-      // 第一次进入时绘制 虚线坐标轴
-      if (isCreated) {
-        // hoverDom 的 操作
-        // 计算该悬浮的位置
-        if (hoverDom.style.display = 'none') {
-          hoverDom.style.display = 'block'
-        }
+      // x 轴 的移动是阶段性的 只有当进入了下一个阶段的时候, 才需要重新绘制
 
-        let x = e.pageX
+      // x轴 总共长 900px 一共 30 天 那么每天移动的区间就为[i * 30, (i + 1) * 30]
 
-        if (x > pen.graph.clientWidth * 0.5) {
-          x = x - hoverDom.clientWidth
-        }
+      let dayIdx = rangeArr.findIndex(item => item[0] <= x && item[1] >= x)
 
-        x = x + 10
+      if (dayIdx === -1) dayIdx = 29
 
-        hoverDom.style.left = x + 'px'
-        // 移动
+      let dayData = kData[dayIdx]
+
+      if (dayData) {
+        hoverDom.innerHTML = `
+          <p>
+            <span>时间</span>
+            <span>${dayData.date}</span>
+          </p>
+          <p>
+            <span>开盘价</span>
+            <span">${dayData.open}</span>
+          </p>
+          <p>
+            <span>收盘价</span>
+            <span">${dayData.close}</span>
+          </p>
+          <p>
+            <span>最高价</span>
+            <span">${dayData.high}</span>
+          </p>
+          <p>
+            <span>最低价</span>
+            <span">${dayData.low}</span>
+          </p>
+        `
+      }
+
+      // 如果已经到了下一个阶段 需要重新渲染
+      // 注意 只有 x 轴 是阶段性跳转, y轴可以自由上下滑动
+
+      // 先清空所有的内容
+      clearGraph()
+
+      // 先画 y 轴 上的横虚线
+      ctx.strokeStyle = '#bfbfbf'
+      ctx.beginPath()
+      ctx.setLineDash([3])
+      ctx.moveTo(0, y - 10)
+      ctx.lineTo(900, y - 10)
+      ctx.stroke()
+      ctx.closePath()
+      // 画 x 轴上的竖虚线
+      let rangeX = rangeArr[dayIdx].reduce((a, b) => a + b, 0) / 2
+      ctx.beginPath()
+      ctx.setLineDash([3])
+      ctx.moveTo(rangeX, 0)
+      ctx.lineTo(rangeX, 380)
+      ctx.stroke()
+      ctx.closePath()
+      // 然后再重新渲染
+      render()
+    }
+    // 清空画布
+    function clearGraph() {
+      ctx.clearRect(0, 0, 900, 400)
+    }
+    // 渲染方法
+    function render() {
+      // 先去渲染坐标系
+      renderAxis()
+      kData.forEach((item, idx) => {
+        drawCandle(item, idx)
+      })
+    }
+    // 渲染坐标系
+    function renderAxis() {
+      // 恢复实线样式, 防止坐标轴也用虚线的样式绘制
+      ctx.setLineDash([])
+      // 画四个边的线
+      ctx.beginPath()
+      ctx.strokeStyle = '#bfbfbf'
+      ctx.moveTo(0, 0)
+      // 留 20px 是为了给x轴的label留位置渲染
+      ctx.lineTo(0, 380)
+      ctx.stroke()
+      ctx.closePath()
+
+      ctx.beginPath()
+      ctx.strokeStyle = '#bfbfbf'
+      ctx.moveTo(0, 380)
+      ctx.lineTo(900, 380)
+      ctx.stroke()
+      ctx.closePath()
+
+      ctx.beginPath()
+      ctx.strokeStyle = '#bfbfbf'
+      ctx.moveTo(900, 380)
+      ctx.lineTo(900, 0)
+      ctx.stroke()
+      ctx.closePath()
+
+      ctx.beginPath()
+      ctx.strokeStyle = '#bfbfbf'
+      ctx.moveTo(900, 0)
+      ctx.lineTo(0, 0)
+      ctx.stroke()
+      ctx.closePath()
+
+      // 接下来 算y轴label的区间值
+      // 最大值
+      maxY = kData.map(item => +item.high).sort((a, b) => a - b).pop()
+      // 最小值
+      minY = kData.map(item => +item.low).sort((a, b) => a - b)[0]
+
+      // 差值
+      const range = maxY - minY
+      // y轴上 有 四个label 被分成3部分, 每部分多少值
+      const ava = range / 3
+      // 存的是y轴 label的值
+      let yList = []
+
+      while (yList.length <= 3) {
+        yList.push((minY + ava * yList.length).toFixed(2))
+      }
+      // 翻转一下顺序 方便渲染
+      yList = yList.sort((a, b) => +b - +a)
+      // 存的是 y轴 label 的px值
+      const yLabelList = []
+
+      // 画 y 轴上的文字
+      for (let i = 0; i < 4; i++) {
+        let num = i * perYlen
+        i === 3 && (num = num - 12)
+        yLabelList.push(num)
+      }
+      yList.forEach((y, i) => {
+        ctx.beginPath()
+        ctx.fillStyle = '#202020'
+        ctx.font = "normal 12px serif"
+        ctx.textBaseline = 'top'
+        ctx.fillText(y, 20, yLabelList[i])
+        ctx.closePath()
+      })
+
+      // 画 x 轴上的文字
+      // 只渲染五个
+      const xLabelList = kData.filter((item, idx) => {
+        return (idx + 1) % 5 === 0
+      })
+      // 最后一个不要
+      xLabelList.pop()
+
+      // 计算x轴上 需要文字的点的坐标
+      xAxisList.forEach((x, i) => {
+        ctx.beginPath()
+        ctx.fillStyle = '#202020'
+        ctx.font = "normal 12px serif"
+        ctx.textBaseline = 'top'
+        ctx.textAlign = 'center'
+        ctx.fillText(xLabelList[i].date, x, 380)
+        ctx.closePath()
+      })
+    }
+    // 画蜡烛图
+    function drawCandle(item, idx) {
+      // 是否涨
+      let isIncrease = +item.close > +item.open
+      // 颜色
+      let color = isIncrease ? '#ff3434' : '#0aab62'
+      // 矩形左上角x
+      let sx = idx * 30 + 1
+
+      // 线的x位置
+      let lx = (idx + 1) * 30 - 15
+      // 初始化 线开始位置 和 结束位置
+      let lsy = null
+      let ley = null
+      let sy = null
+      let ey = null
+      let height = null
+
+      if (isIncrease) {
+        // 左上角y
+        sy = 380 - ((+item.close - minY) * 5.4).toFixed(2)
+        // 高度
+        height = (+item.close - +item.open) * 5.4
       } else {
-        isCreated = true
-        // 新建
-        pen.drawLine(25, y, 900, y, '#bfbfbf', [3])
-           .drawLine(x, 0, x, 430, '#bfbfbf', [3])
+        // 左上角y
+        sy = 380 - ((+item.open - minY) * 5.4).toFixed(2)
+        // 高度
+        height = (+item.open - +item.close) * 5.4
+      }
+      // 左下角y
+      ey = sy + height
+      // 画矩形
+      ctx.beginPath()
+
+      if (isIncrease) {
+        ctx.strokeStyle = color
+        ctx.strokeRect(sx, sy, 28, height)
+      } else {
+        ctx.fillStyle = color
+        ctx.fillRect(sx, sy, 28, height)
+        ctx.strokeStyle = color
+      }
+
+      ctx.stroke()
+      ctx.closePath()
+
+      // 最高价y
+      lsy = 380 - ((+item.high - minY) * 5.4)
+      // 最低价y
+      ley = 380 - ((+item.low - minY) * 5.4)
+
+      // 矩形上方有线需要绘制
+      if (lsy < sy) {
+        ctx.beginPath()
+        ctx.moveTo(lx, lsy)
+        ctx.lineTo(lx, sy)
+        ctx.stroke()
+        ctx.closePath()
+      }
+      // 矩形下方有线需要绘制
+      if (ley > ey) {
+        ctx.beginPath()
+        ctx.moveTo(lx, ey)
+        ctx.lineTo(lx, ley)
+        ctx.stroke()
+        ctx.closePath()
       }
     }
   </script>
