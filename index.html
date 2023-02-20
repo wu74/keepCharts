@@ -533,6 +533,11 @@
       // 颜色
       let color = isIncrease ? '#ff3434' : '#0aab62'
       // 矩形左上角x
+      // 缩放 会产生问题
+      // 计算圆点
+      // 计算x 轴 和 y 轴 的方法 可以封装一下
+      // 计算高度可以从最大值 -> 当前高度
+      // 蜡烛图 模糊
       let sx = idx * 30 + 1
 
       // 线的x位置
@@ -557,12 +562,35 @@
       }
       // 左下角y
       ey = sy + height
-      // 画矩形
+
+      // 最高价y
+      lsy = 380 - ((+item.high - minY) * 5.4)
+      // 最低价y
+      ley = 380 - ((+item.low - minY) * 5.4)
+
+
+
+      // 先画竖线
+      ctx.beginPath()
+      ctx.strokeStyle = color
+      ctx.moveTo(lx, lsy)
+      ctx.lineTo(lx, ley)
+      ctx.stroke()
+      ctx.closePath()
+
+
+      // 再画矩形
       ctx.beginPath()
 
       if (isIncrease) {
-        ctx.strokeStyle = color
-        ctx.strokeRect(sx, sy, 28, height)
+        // ctx.strokeStyle = color
+        // ctx.strokeRect(sx, sy, 28, height)
+
+        ctx.fillStyle = color
+        ctx.fillRect(sx, sy, 28, height)
+
+        ctx.fillStyle = '#fff'
+        ctx.fillRect(sx + 1, sy + 1, 26, height - 2)
       } else {
         ctx.fillStyle = color
         ctx.fillRect(sx, sy, 28, height)
@@ -572,27 +600,35 @@
       ctx.stroke()
       ctx.closePath()
 
-      // 最高价y
-      lsy = 380 - ((+item.high - minY) * 5.4)
-      // 最低价y
-      ley = 380 - ((+item.low - minY) * 5.4)
 
-      // 矩形上方有线需要绘制
-      if (lsy < sy) {
-        ctx.beginPath()
-        ctx.moveTo(lx, lsy)
-        ctx.lineTo(lx, sy)
-        ctx.stroke()
-        ctx.closePath()
-      }
-      // 矩形下方有线需要绘制
-      if (ley > ey) {
-        ctx.beginPath()
-        ctx.moveTo(lx, ey)
-        ctx.lineTo(lx, ley)
-        ctx.stroke()
-        ctx.closePath()
-      }
+
+      // // 矩形上方有线需要绘制
+      // if (lsy < sy) {
+      //   ctx.beginPath()
+      //   ctx.moveTo(lx, lsy)
+      //   ctx.lineTo(lx, sy)
+      //   ctx.stroke()
+      //   ctx.closePath()
+      // }
+      // // 矩形下方有线需要绘制
+      // if (ley > ey) {
+      //   ctx.beginPath()
+      //   ctx.moveTo(lx, ey)
+      //   ctx.lineTo(lx, ley)
+      //   ctx.stroke()
+      //   ctx.closePath()
+      // }
+
+    }
+
+    function setupCanvas(canvas) {
+      var dpr = (scale = window.devicePixelRatio || 1);
+      var rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      canvas.style.width = rect.width + "px"
+      canvas.style.height = rect.height + "px"
+      return canvas;
     }
   </script>
 </body>

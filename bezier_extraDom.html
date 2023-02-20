@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>bezier</title>
+  <style>
+    #container {
+      position: relative;
+      width: 400px;
+      height: 400px;
+      margin: 50px auto;
+    }
+
+    #container::before {
+      content: 'Progression';
+      display: block;
+      position: absolute;
+      bottom: 50px;
+      left: -60px;
+      transform: rotate(-90deg);
+    }
+
+    #container::after {
+      content: 'Time';
+      display: block;
+      position: absolute;
+      bottom: -25px;
+      left: 25px;
+    }
+
+    .point1,
+    .point2 {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background-color: #0aab62;
+    }
+
+    .point1 {
+      top: 50px;
+      left: 50px;
+    }
+
+    .point2 {
+      top: 250px;
+      left: 250px
+    }
+  </style>
+</head>
+
+<body>
+  <div id="container">
+    <canvas id="bezier" width="400" height="400"></canvas>
+    <div class="point1"></div>
+    <div class="point2"></div>
+  </div>
+  <script src="./commonDrag.js"></script>
+  <script>
+    const c = document.querySelector('#bezier')
+    const ctx = c.getContext('2d')
+
+    const point1 = new commonDrag('.point1', {
+      containerClass: '#container',
+      customMoveFn: true
+    })
+    const point2 = new commonDrag('.point2', {
+      containerClass: '#container',
+      customMoveFn: true
+    })
+
+    point1.onDragMove = point2.onDragMove = function (x, y) {
+      let curDom = this.dragDom.className
+
+      // 获取另一个节点
+      let another = Array.from(this.graph.children)
+        .filter(ele => ele.className !== curDom && ele.tagName === 'DIV')
+      another = another[0]
+
+      let { top, left } = another.getBoundingClientRect()
+
+      let x2 = left - this.graph.offsetLeft
+      let y2 = top - this.graph.offsetTop
+
+      this.dragDom.style.left = x + 'px'
+      this.dragDom.style.top = y + 'px'
+
+      clearGraph()
+
+      render(x, y, x2, y2, curDom)
+    }
+
+    render()
+
+    function clearGraph() {
+      ctx.clearRect(0, 0, 400, 400)
+    }
+
+    function render() {
+      drawAxis()
+      drawFixPoint()
+      drawBezier(...arguments)
+      drawPointLine(...arguments)
+    }
+
+    function drawBezier(x1 = 50, y1 = 50, x2 = 250, y2 = 250, curDom = 'point1') {
+      let startPos = curDom === 'point1' ? [0, 400] : [400, 0]
+      let endPos = curDom === 'point1' ? [400, 0] : [0, 400]
+
+      ctx.beginPath()
+      ctx.lineWidth = 4
+      ctx.strokeStyle = '#000000'
+      ctx.moveTo(...startPos)
+      ctx.bezierCurveTo(x1, y1, x2, y2, ...endPos)
+      ctx.stroke()
+    }
+
+    function drawAxis() {
+      ctx.beginPath()
+      ctx.strokeStyle = '#8d8d8d'
+      ctx.lineWidth = 2
+      ctx.moveTo(0, 0)
+      ctx.lineTo(0, 400)
+      ctx.stroke()
+      ctx.closePath()
+
+      ctx.beginPath()
+      ctx.strokeStyle = '#8d8d8d'
+      ctx.lineWidth = 2
+      ctx.moveTo(0, 400)
+      ctx.lineTo(400, 400)
+      ctx.stroke()
+      ctx.closePath()
+
+      ctx.beginPath()
+      ctx.lineWidth = 5
+      ctx.strokeStyle = '#e5e5e5'
+      ctx.moveTo(0, 400)
+      ctx.lineTo(400, 0)
+      ctx.stroke()
+      ctx.closePath()
+    }
+
+    function drawFixPoint() {
+      ctx.beginPath();
+      ctx.lineWidth = 1
+      ctx.strokeStyle = '#b5b5b5'
+      ctx.arc(0, 400, 10, 0, 2 * Math.PI);
+      ctx.stroke();
+      ctx.fillStyle = '#fff'
+      ctx.fill()
+      ctx.closePath()
+
+      ctx.beginPath();
+      ctx.lineWidth = 1
+      ctx.strokeStyle = '#b5b5b5'
+      ctx.arc(400, 0, 10, 0, 2 * Math.PI);
+      ctx.stroke();
+      ctx.fillStyle = '#fff'
+      ctx.fill()
+      ctx.closePath()
+    }
+
+    function drawPointLine(x1 = 55, y1 = 55, x2 = 255, y2 = 255, curDom = 'point1') {
+
+      let startPos1 = curDom === 'point1' ? [0, 400] : [400, 0]
+      let startPos2 = curDom === 'point1' ? [400, 0] : [0, 400]
+
+      ctx.lineWidth = 2
+      ctx.strokeStyle = '#686868'
+
+      ctx.beginPath()
+      ctx.moveTo(...startPos1)
+      ctx.lineTo(x1 + 5, y1 + 5)
+      ctx.stroke()
+      ctx.closePath()
+
+      ctx.beginPath()
+      ctx.moveTo(...startPos2)
+      ctx.lineTo(x2 + 5, y2 + 5)
+      ctx.stroke()
+      ctx.closePath()
+    }
+
+    function setupCanvas(canvas) {
+      var dpr = (scale = window.devicePixelRatio || 1);
+      var rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      canvas.style.width = rect.width + "px"
+      canvas.style.height = rect.height + "px"
+      return canvas;
+    }
+  </script>
+</body>
+
+</html>
