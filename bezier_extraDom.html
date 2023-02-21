@@ -88,21 +88,24 @@
       this.dragDom.style.left = x + 'px'
       this.dragDom.style.top = y + 'px'
 
-      clearGraph()
+      ctx.clearRect(0, 0, 400, 400)
 
       render(x, y, x2, y2, curDom)
     }
 
     render()
 
-    function clearGraph() {
-      ctx.clearRect(0, 0, 400, 400)
-    }
-
     function render() {
+      // 画坐标系
       drawAxis()
+      
+      // 画左下 右上 固定点
       drawFixPoint()
+
+      // 画贝塞尔曲线
       drawBezier(...arguments)
+
+      // 画控制点和固定点中间的线
       drawPointLine(...arguments)
     }
 
