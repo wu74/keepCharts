@@ -41,27 +41,7 @@
   </div>
 
   <script>
-    // 获取 DOM
-    const container = document.querySelector('#container')
-    const hoverDom = document.querySelector('#hoverTip')
-    // 获取canvas元素和画笔
-    const c = document.querySelector('#graph')
-    const ctx = c.getContext('2d')
-    // 平均
-    const perYlen = 126
-    // 需要渲染label的 x 坐标 数组
-    const xAxisList = [150, 300, 450, 600, 750]
-    // 处理区间数组, 后面绘制阶段性的x轴虚线 和 悬浮框的文本需要用到
-    let rangeArr = []
-    let count = 0
-
-    while (count < 30) {
-      rangeArr.push([count * 30, (count + 1) * 30])
-      count++
-    }
-
-    // k线图数据
-    const kData = [
+    let kData = [
       {
         "date": "20220713",
         "time": "1657641600",
@@ -333,10 +313,41 @@
         "netChangeRatio": "+1.92"
       }
     ]
+    // 获取 DOM
 
-    // 初始化 y轴 最大值 和 最小值
+    
+    const container = document.querySelector('#container')
+    const hoverDom = document.querySelector('#hoverTip')
+    // 获取canvas元素和画笔
+    const c = document.querySelector('#graph')
+    const ctx = c.getContext('2d')
+    // 平均
+    const perYlen = 126
+    // 需要渲染label的 x 坐标 数组
+    const xAxisList = [150, 300, 450, 600, 750]
+    
     let maxY = 0
     let minY = +kData[0].low
+    let dayWidth = null
+    let unit = calculateUnit(kData)
+
+    // console.log(unit, 'unit');
+    // console.log(maxY, 'maxY');
+    // console.log(minY, 'minY');
+
+
+    // 处理区间数组, 后面绘制阶段性的x轴虚线 和 悬浮框的文本需要用到
+    let rangeArr = []
+    let count = 0
+
+    let dataLen = kData.length
+    let dayLen = container.clientWidth / dataLen
+
+
+    while (count < 30) {
+      rangeArr.push([count * 30, (count + 1) * 30])
+      count++
+    }
 
     render()
 
@@ -345,7 +356,7 @@
     container.addEventListener('mouseenter', mouseenterFn)
     container.addEventListener('mouseleave', function () {
       hoverDom.style.display = 'none'
-      clearGraph()
+      ctx.clearRect(0, 0, 900, 400)
       render()
       container.removeEventListener('mousemove', mousemoveFn)
     })
@@ -404,7 +415,7 @@
       // 注意 只有 x 轴 是阶段性跳转, y轴可以自由上下滑动
 
       // 先清空所有的内容
-      clearGraph()
+      ctx.clearRect(0, 0, 900, 400)
 
       // 先画 y 轴 上的横虚线
       ctx.strokeStyle = '#bfbfbf'
@@ -426,9 +437,6 @@
       render()
     }
     // 清空画布
-    function clearGraph() {
-      ctx.clearRect(0, 0, 900, 400)
-    }
     // 渲染方法
     function render() {
       // 先去渲染坐标系
@@ -532,12 +540,7 @@
       let isIncrease = +item.close > +item.open
       // 颜色
       let color = isIncrease ? '#ff3434' : '#0aab62'
-      // 矩形左上角x
-      // 缩放 会产生问题
-      // 计算圆点
-      // 计算x 轴 和 y 轴 的方法 可以封装一下
-      // 计算高度可以从最大值 -> 当前高度
-      // 蜡烛图 模糊
+
       let sx = idx * 30 + 1
 
       // 线的x位置
@@ -551,12 +554,12 @@
 
       if (isIncrease) {
         // 左上角y
-        sy = 380 - ((+item.close - minY) * 5.4).toFixed(2)
+        sy = ((maxY - (+item.close)) * 5.4).toFixed(2)
         // 高度
         height = (+item.close - +item.open) * 5.4
       } else {
         // 左上角y
-        sy = 380 - ((+item.open - minY) * 5.4).toFixed(2)
+        sy = ((maxY - (+item.open)) * 5.4).toFixed(2)
         // 高度
         height = (+item.open - +item.close) * 5.4
       }
@@ -564,9 +567,9 @@
       ey = sy + height
 
       // 最高价y
-      lsy = 380 - ((+item.high - minY) * 5.4)
+      lsy = (maxY - (+item.high)) * 5.4
       // 最低价y
-      ley = 380 - ((+item.low - minY) * 5.4)
+      ley = (maxY - (+item.low)) * 5.4
 
 
 
@@ -583,14 +586,11 @@
       ctx.beginPath()
 
       if (isIncrease) {
-        // ctx.strokeStyle = color
-        // ctx.strokeRect(sx, sy, 28, height)
-
-        ctx.fillStyle = color
-        ctx.fillRect(sx, sy, 28, height)
-
+        ctx.strokeStyle = color
+        ctx.rect(sx, sy, 28, height)
+        ctx.stroke()
         ctx.fillStyle = '#fff'
-        ctx.fillRect(sx + 1, sy + 1, 26, height - 2)
+        ctx.fill()
       } else {
         ctx.fillStyle = color
         ctx.fillRect(sx, sy, 28, height)
@@ -600,25 +600,41 @@
       ctx.stroke()
       ctx.closePath()
 
+    }
 
+    // 根据当前data数据计算 在自定义坐标系的位置
+    function calculateY(data) {
+      let y = null;
 
-      // // 矩形上方有线需要绘制
-      // if (lsy < sy) {
-      //   ctx.beginPath()
-      //   ctx.moveTo(lx, lsy)
-      //   ctx.lineTo(lx, sy)
-      //   ctx.stroke()
-      //   ctx.closePath()
-      // }
-      // // 矩形下方有线需要绘制
-      // if (ley > ey) {
-      //   ctx.beginPath()
-      //   ctx.moveTo(lx, ey)
-      //   ctx.lineTo(lx, ley)
-      //   ctx.stroke()
-      //   ctx.closePath()
-      // }
+      let isIncrease = +data.close - +data.open
 
+      let baseY = isIncrease ? +item.close : +item.open
+
+      y = ((maxY - baseY) * unit).toFixed(2)
+
+      return y
+    }
+
+    function calculateX(data) {
+      dayWidth = c.clientWidth / kData.length
+    }
+
+    function calculateHeight(data) {
+      let isIncrease = +data.close - +data.open
+
+      let p1 = isIncrease ? +data.close : +data.open
+
+      let p2 = isIncrease ? +data.open : +data.close
+
+      return (p1 - p2) * unit
+    }
+
+    function calculateUnit(arr) {
+      maxY = arr.map(item => +item.high).sort((a, b) => a - b).pop()
+
+      minY = arr.map(item => +item.low).sort((a, b) => a - b)[0]
+
+      return (c.clientHeight / (maxY - minY)).toFixed(1)
     }
 
     function setupCanvas(canvas) {

@@ -29,28 +29,25 @@
     let curDom = null
     let copyCtx = null
     let colorMapping = {}
+
     let point1Pos = {
       x: 50,
-      y: 50
+      y: 50,
+      name: 'point1'
     }
+
     let point2Pos = {
       x: 250,
-      y: 250
-    } 
+      y: 250,
+      name: 'point2'
+    }
     // 创建副本画布
     createHitCanvas()
 
-    // 画坐标系 和 控制点
-    drawAxis()
-    drawControlLine()
-
-    renderControlPoint(50, 50, 'point1')
-    renderControlPoint(250, 250, 'point2')
-    drawBezier()
+    render()
 
     // 鼠标移入容器后  判断按下的点是否在控制点内  如果在 并且 进行了拖拽行为
     // 就不停清空画布 然后再重新绘制
-
     container.addEventListener('mousedown', (e) => {
       // 按下的时候判断是不是点在 控制点上
       let activeDom = isClickInPoint(e)
@@ -73,25 +70,15 @@
       ctx.clearRect(0, 0, 400, 400)
       copyCtx.clearRect(0, 0, 400, 400)
 
-      drawAxis()
-      drawControlLine()
       if (curDom === 'point1') {
-        point1Pos = { x, y }
-        renderControlPoint(x, y, 'point1')
-        renderControlPoint(point2Pos.x, point2Pos.y, 'point2')
+        point1Pos.x = x
+        point1Pos.y = y
       } else {
-        point2Pos = { x, y }
-        renderControlPoint(x, y, 'point2')
-        renderControlPoint(point1Pos.x, point1Pos.y, 'point1')
+        point2Pos.x = x
+        point2Pos.y = y
       }
 
-      let anotherDom = curDom === 'point1' ? 'point2' : 'point1'
-
-      let ax = curDom === 'point1' ? point2Pos.x : point1Pos.x
-      let ay = curDom === 'point1' ? point2Pos.y : point1Pos.y
-      // console.log(curDom, 'curDom');
-
-      drawBezier(x, y, ax, ay, curDom)
+      render()
     }
 
     function createHitCanvas() {
@@ -99,7 +86,7 @@
       shadow.width = c.clientWidth
       shadow.height = c.clientHeight
 
-      copyCtx = shadow.getContext('2d',  { willReadFrequently: true })
+      copyCtx = shadow.getContext('2d', { willReadFrequently: true })
 
       shadow.style.display = 'none'
       container.appendChild(shadow)
@@ -113,7 +100,7 @@
       const { r, g, b } = {
         r: res[0],
         g: res[1],
-        b: res[2] 
+        b: res[2]
 
       };
       return `#${toHex(r)}${toHex(g)}${toHex(b)}`
@@ -133,24 +120,103 @@
 
       if (imageData[3] == 255) {
         let colorKey = rgbToHex(`rgb(${imageData[0]}, ${imageData[1]}, ${imageData[2]})`);
-        
+
         // 获取到了当前点击的是哪个元素
         return colorMapping[colorKey]
       }
     }
 
-    function drawAxis() {
+    function renderControlPoint() {
+      [point1Pos, point2Pos].forEach((pos, idx) => {
+        // 在显示画布上画元素
+        ctx.beginPath()
+        ctx.lineWidth = 1
+        ctx.strokeStyle = '#333'
+        ctx.arc(pos.x, pos.y, 10, 0, 2 * Math.PI)
+        ctx.fillStyle = idx === 0 ? '#ff0088' : '#00aabb'
+        ctx.fill()
+        ctx.stroke()
+        ctx.closePath()
+
+        // 先获取颜色  然后跟类名一起存入 映射表
+        let color = getRandomColor()
+        colorMapping[color] = pos.name
+
+        // 在影子画布上同样的位置画同样的元素, 用当前颜色填充
+        copyCtx.beginPath()
+        copyCtx.lineWidth = 1
+        copyCtx.strokeStyle = '#333'
+        copyCtx.arc(pos.x, pos.y, 10, 0, 2 * Math.PI)
+        copyCtx.stroke()
+        copyCtx.fillStyle = color
+        copyCtx.fill()
+        copyCtx.closePath()
+      })
+
+
+      function getRandomColor() {
+        return '#' + (function (h) {
+          return new Array(7 - h.length).join('0') + h
+        })((Math.random() * 0x1000000 << 0).toString(16))
+      }
+    }
+
+
+    function drawBezier() {
       ctx.beginPath()
+      ctx.lineWidth = 4
+      ctx.strokeStyle = '#000000'
+      ctx.moveTo(0, 400)
+      ctx.bezierCurveTo(point1Pos.x, point1Pos.y, point2Pos.x, point2Pos.y, 400, 0)
+      ctx.stroke()
+    }
+
+    function drawControlLine() {
+      ctx.lineWidth = 2
+      ctx.strokeStyle = '#696969'
+
+      ctx.beginPath()
+      ctx.moveTo(0, 400)
+      ctx.lineTo(point1Pos.x, point1Pos.y)
+      ctx.stroke()
+      ctx.closePath()
+
+      ctx.beginPath()
+      ctx.moveTo(400, 0)
+      ctx.lineTo(point2Pos.x, point2Pos.y)
+      ctx.stroke()
+      ctx.closePath()
+    }
+
+    function drawBg() {
+      // 先画背景
+      let count = 0
+      let width = c.clientWidth
+      let height = 20
+      let sy = 0
+      let i = 0
+
+      while (count < c.clientHeight) {
+        ctx.beginPath()
+        ctx.fillStyle = i % 2 === 0 ? '#f0f0f0' : '#fff'
+        ctx.fillRect(0, sy, width, height)
+        ctx.closePath()
+        sy += 20
+        count += 20
+        i++
+      }
+
+      // 再画坐标轴和斜线
       ctx.strokeStyle = '#8d8d8d'
       ctx.lineWidth = 2
+
+      ctx.beginPath()
       ctx.moveTo(0, 0)
       ctx.lineTo(0, 400)
       ctx.stroke()
       ctx.closePath()
 
       ctx.beginPath()
-      ctx.strokeStyle = '#8d8d8d'
-      ctx.lineWidth = 2
       ctx.moveTo(0, 400)
       ctx.lineTo(400, 400)
       ctx.stroke()
@@ -165,69 +231,12 @@
       ctx.closePath()
     }
 
+    function render() {
+      drawBg()
+      drawControlLine()
 
-    function renderControlPoint(x = 50, y = 50, curDom = 'point1') {
-      // 在显示画布上画元素
-      ctx.beginPath()
-      ctx.lineWidth = 1
-      ctx.strokeStyle = '#333'
-      ctx.arc(x, y, 10, 0, 2 * Math.PI)
-      ctx.fillStyle = '#fff'
-      ctx.fill()
-      ctx.stroke()
-      ctx.closePath()
-
-      // 先获取颜色  然后跟类名一起存入 映射表
-      let color = getRandomColor()
-      colorMapping[color] = curDom
-
-      // 在影子画布上同样的位置画同样的元素, 用当前颜色填充
-      copyCtx.beginPath()
-      copyCtx.lineWidth = 1
-      copyCtx.strokeStyle = '#333'
-      copyCtx.arc(x, y, 10, 0, 2 * Math.PI)
-      copyCtx.stroke()
-      copyCtx.fillStyle = color
-      copyCtx.fill()
-      copyCtx.closePath()
-
-      function getRandomColor() {
-        return '#' + (function (h) {
-          return new Array(7 - h.length).join('0') + h
-        })((Math.random() * 0x1000000 << 0).toString(16))
-      }
-    }
-
-
-    function drawBezier(x1 = 50, y1 = 50, x2 = 250, y2 = 250, curDom = 'point1') {
-      let startPos = curDom === 'point1' ? [0, 400] : [400, 0]
-      let endPos = curDom === 'point1' ? [400, 0] : [0, 400]
-
-      ctx.beginPath()
-      ctx.lineWidth = 4
-      ctx.strokeStyle = '#000000'
-      ctx.moveTo(...startPos)
-      ctx.bezierCurveTo(x1, y1, x2, y2, ...endPos)
-      ctx.stroke()
-    }
-
-
-    function drawControlLine() {
-      ctx.beginPath()
-      ctx.lineWidth = 2
-      ctx.strokeStyle = '#696969'
-      ctx.moveTo(0, 400)
-      ctx.lineTo(point1Pos.x, point1Pos.y)
-      ctx.stroke()
-      ctx.closePath()
-
-      ctx.beginPath()
-      ctx.lineWidth = 2
-      ctx.strokeStyle = '#696969'
-      ctx.moveTo(400, 0)
-      ctx.lineTo(point2Pos.x, point2Pos.y)
-      ctx.stroke()
-      ctx.closePath()
+      renderControlPoint()
+      drawBezier()
     }
   </script>
 </body>

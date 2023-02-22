@@ -37,17 +37,18 @@
       width: 20px;
       height: 20px;
       border-radius: 50%;
-      background-color: #0aab62;
     }
 
     .point1 {
       top: 50px;
       left: 50px;
+      background-color: #0aab62;
     }
 
     .point2 {
       top: 250px;
-      left: 250px
+      left: 250px;
+      background-color: #ff3737;
     }
   </style>
 </head>
@@ -58,10 +59,22 @@
     <div class="point1"></div>
     <div class="point2"></div>
   </div>
-  <script src="./commonDrag.js"></script>
+  <script src="./js/commonDrag.js"></script>
   <script>
     const c = document.querySelector('#bezier')
     const ctx = c.getContext('2d')
+
+    const p1 = document.querySelector('.point1')
+    const p2 = document.querySelector('.point2')
+
+    let pos1 = {
+      x: p1.offsetLeft,
+      y: p1.offsetTop
+    }
+    let pos2 = {
+      x: p2.offsetLeft,
+      y: p2.offsetTop
+    }
 
     const point1 = new commonDrag('.point1', {
       containerClass: '#container',
@@ -75,49 +88,48 @@
     point1.onDragMove = point2.onDragMove = function (x, y) {
       let curDom = this.dragDom.className
 
-      // 获取另一个节点
-      let another = Array.from(this.graph.children)
-        .filter(ele => ele.className !== curDom && ele.tagName === 'DIV')
-      another = another[0]
-
-      let { top, left } = another.getBoundingClientRect()
-
-      let x2 = left - this.graph.offsetLeft
-      let y2 = top - this.graph.offsetTop
+      if (curDom === 'point1') {
+        pos1 = {
+          x,
+          y
+        }
+      } else {
+        pos2 = {
+          x,
+          y
+        }
+      }
 
       this.dragDom.style.left = x + 'px'
       this.dragDom.style.top = y + 'px'
 
       ctx.clearRect(0, 0, 400, 400)
 
-      render(x, y, x2, y2, curDom)
+      render()
     }
 
     render()
 
     function render() {
+      // 画背景
+      drawBg()
+
       // 画坐标系
       drawAxis()
-      
-      // 画左下 右上 固定点
-      drawFixPoint()
 
       // 画贝塞尔曲线
-      drawBezier(...arguments)
+      drawBezier()
 
       // 画控制点和固定点中间的线
-      drawPointLine(...arguments)
+      drawPointLine()
     }
 
-    function drawBezier(x1 = 50, y1 = 50, x2 = 250, y2 = 250, curDom = 'point1') {
-      let startPos = curDom === 'point1' ? [0, 400] : [400, 0]
-      let endPos = curDom === 'point1' ? [400, 0] : [0, 400]
-
+    function drawBezier() {
       ctx.beginPath()
       ctx.lineWidth = 4
       ctx.strokeStyle = '#000000'
-      ctx.moveTo(...startPos)
-      ctx.bezierCurveTo(x1, y1, x2, y2, ...endPos)
+      ctx.moveTo(0, 400)
+      ctx.bezierCurveTo(pos1.x, pos1.y, pos2.x, pos2.y, 400, 0)
       ctx.stroke()
     }
 
@@ -147,43 +159,37 @@
       ctx.closePath()
     }
 
-    function drawFixPoint() {
-      ctx.beginPath();
-      ctx.lineWidth = 1
-      ctx.strokeStyle = '#b5b5b5'
-      ctx.arc(0, 400, 10, 0, 2 * Math.PI);
-      ctx.stroke();
-      ctx.fillStyle = '#fff'
-      ctx.fill()
-      ctx.closePath()
+    function drawBg() {
+      let count = 0
+      let width = c.clientWidth
+      let height = 20
+      let sy = 0
+      let i = 0
 
-      ctx.beginPath();
-      ctx.lineWidth = 1
-      ctx.strokeStyle = '#b5b5b5'
-      ctx.arc(400, 0, 10, 0, 2 * Math.PI);
-      ctx.stroke();
-      ctx.fillStyle = '#fff'
-      ctx.fill()
-      ctx.closePath()
+      while(count < c.clientHeight) {
+        ctx.beginPath()
+        ctx.fillStyle = i % 2 === 0 ? '#f0f0f0' : '#fff'
+        ctx.fillRect(0 , sy, width, height)
+        ctx.closePath()
+        sy += 20
+        count += 20
+        i++
+      }
     }
 
-    function drawPointLine(x1 = 55, y1 = 55, x2 = 255, y2 = 255, curDom = 'point1') {
-
-      let startPos1 = curDom === 'point1' ? [0, 400] : [400, 0]
-      let startPos2 = curDom === 'point1' ? [400, 0] : [0, 400]
-
+    function drawPointLine() {
       ctx.lineWidth = 2
       ctx.strokeStyle = '#686868'
 
       ctx.beginPath()
-      ctx.moveTo(...startPos1)
-      ctx.lineTo(x1 + 5, y1 + 5)
+      ctx.moveTo(0, 400)
+      ctx.lineTo(pos1.x + 10, pos1.y + 10)
       ctx.stroke()
       ctx.closePath()
 
       ctx.beginPath()
-      ctx.moveTo(...startPos2)
-      ctx.lineTo(x2 + 5, y2 + 5)
+      ctx.moveTo(400, 0)
+      ctx.lineTo(pos2.x + 10, pos2.y + 10)
       ctx.stroke()
       ctx.closePath()
     }
