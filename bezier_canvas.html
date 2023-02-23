@@ -21,145 +21,101 @@
     <canvas id="graph" width="400" height="400"></canvas>
   </div>
 
+  <button id="btn1">移动point1</button>
+  <button id="btn2">移动point2</button>
+
+  <script src="./js/circle.js"></script>
   <script>
     const container = document.querySelector('#container')
     const c = container.querySelector('#graph')
     const ctx = c.getContext('2d', { willReadFrequently: true })
 
-    let curDom = null
-    let copyCtx = null
-    let colorMapping = {}
+    const btn1 = document.querySelector('#btn1')
+    const btn2 = document.querySelector('#btn2')
 
-    let point1Pos = {
-      x: 50,
-      y: 50,
-      name: 'point1'
-    }
+    let pos1 = { x: 50, y: 50, r: 10 }
+    let pos2 = { x: 250, y: 250, r: 10 }
 
-    let point2Pos = {
-      x: 250,
-      y: 250,
-      name: 'point2'
-    }
-    // 创建副本画布
-    createHitCanvas()
+
+    let p1 = new Circle(pos1, ctx, c)
+    let p2 = new Circle(pos2, ctx, c)
 
     render()
 
-    // 鼠标移入容器后  判断按下的点是否在控制点内  如果在 并且 进行了拖拽行为
-    // 就不停清空画布 然后再重新绘制
-    container.addEventListener('mousedown', (e) => {
-      // 按下的时候判断是不是点在 控制点上
-      let activeDom = isClickInPoint(e)
-      curDom = activeDom
+    p1.draw()
+    p2.draw()
 
-      if (activeDom) {
-        container.addEventListener('mousemove', mousemoveFn)
-      }
-    })
-    container.addEventListener('mouseup', function (e) {
-      container.removeEventListener('mousemove', mousemoveFn)
-    })
 
-    function mousemoveFn(e) {
-      // 算出当前移动的点 在 canvas 画布上的坐标
-      const rect = c.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      // 不停的清空画布 和影子画布 然后在各自的画布上重新绘制
+
+    p1.onClick = function (e) {
       ctx.clearRect(0, 0, 400, 400)
-      copyCtx.clearRect(0, 0, 400, 400)
-
-      if (curDom === 'point1') {
-        point1Pos.x = x
-        point1Pos.y = y
-      } else {
-        point2Pos.x = x
-        point2Pos.y = y
-      }
 
       render()
-    }
 
-    function createHitCanvas() {
-      const shadow = document.createElement('canvas')
-      shadow.width = c.clientWidth
-      shadow.height = c.clientHeight
-
-      copyCtx = shadow.getContext('2d', { willReadFrequently: true })
-
-      shadow.style.display = 'none'
-      container.appendChild(shadow)
-    }
-
-
-    function rgbToHex(color) {
-      const arr = color.match(/(\d(\.\d+)?)+/g) || [];
-      const res = arr.map(s => parseInt(s, 10))
-
-      const { r, g, b } = {
-        r: res[0],
-        g: res[1],
-        b: res[2]
-
-      };
-      return `#${toHex(r)}${toHex(g)}${toHex(b)}`
-
-      function toHex(n) {
-        return `${n > 15 ? '' : 0}${n.toString(16)}`
-      }
-    }
-
-    function isClickInPoint(e) {
-      const rect = c.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-
-      // 拿当前坐标去影子画布上 取元素
-      let imageData = copyCtx.getImageData(x, y, 1, 1).data
-
-      if (imageData[3] == 255) {
-        let colorKey = rgbToHex(`rgb(${imageData[0]}, ${imageData[1]}, ${imageData[2]})`);
-
-        // 获取到了当前点击的是哪个元素
-        return colorMapping[colorKey]
-      }
-    }
-
-    function renderControlPoint() {
-      [point1Pos, point2Pos].forEach((pos, idx) => {
-        // 在显示画布上画元素
-        ctx.beginPath()
-        ctx.lineWidth = 1
-        ctx.strokeStyle = '#333'
-        ctx.arc(pos.x, pos.y, 10, 0, 2 * Math.PI)
-        ctx.fillStyle = idx === 0 ? '#ff0088' : '#00aabb'
-        ctx.fill()
-        ctx.stroke()
-        ctx.closePath()
-
-        // 先获取颜色  然后跟类名一起存入 映射表
-        let color = getRandomColor()
-        colorMapping[color] = pos.name
-
-        // 在影子画布上同样的位置画同样的元素, 用当前颜色填充
-        copyCtx.beginPath()
-        copyCtx.lineWidth = 1
-        copyCtx.strokeStyle = '#333'
-        copyCtx.arc(pos.x, pos.y, 10, 0, 2 * Math.PI)
-        copyCtx.stroke()
-        copyCtx.fillStyle = color
-        copyCtx.fill()
-        copyCtx.closePath()
+      this.setAttr({
+        type: 'color',
+        color: 'red'
       })
 
-
-      function getRandomColor() {
-        return '#' + (function (h) {
-          return new Array(7 - h.length).join('0') + h
-        })((Math.random() * 0x1000000 << 0).toString(16))
-      }
+      p1.draw()
+      p2.draw()
     }
+
+    p2.onClick = function (e) {
+      ctx.clearRect(0, 0, 400, 400)
+
+      render()
+
+      this.setAttr({
+        type: 'color',
+        color: 'green'
+      })
+
+      p1.draw()
+      p2.draw()
+    }
+
+    p1.onDrag = p2.onDrag = function (e) {
+
+      let x = e.pageX - this.canvasLeft
+      let y = e.pageY - this.canvasTop
+
+      ctx.clearRect(0, 0, 400, 400)
+
+      render()
+
+      this.setAttr({
+        type: 'position',
+        x,
+        y
+      })
+
+      p1.draw()
+      p2.draw()
+    }
+
+    btn1.addEventListener('click', function() {
+      p1.setAttr({
+        type: 'position',
+        x: 100,
+        y: 100
+      })
+      render()
+      p1.draw()
+      p2.draw()
+    })
+
+    btn2.addEventListener('click', function() {
+      p2.setAttr({
+        type: 'position',
+        x: 300,
+        y: 300
+      })
+
+      render()
+      p1.draw()
+      p2.draw()
+    })
 
 
     function drawBezier() {
@@ -167,7 +123,7 @@
       ctx.lineWidth = 4
       ctx.strokeStyle = '#000000'
       ctx.moveTo(0, 400)
-      ctx.bezierCurveTo(point1Pos.x, point1Pos.y, point2Pos.x, point2Pos.y, 400, 0)
+      ctx.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, 400, 0)
       ctx.stroke()
     }
 
@@ -177,13 +133,13 @@
 
       ctx.beginPath()
       ctx.moveTo(0, 400)
-      ctx.lineTo(point1Pos.x, point1Pos.y)
+      ctx.lineTo(p1.x, p1.y)
       ctx.stroke()
       ctx.closePath()
 
       ctx.beginPath()
       ctx.moveTo(400, 0)
-      ctx.lineTo(point2Pos.x, point2Pos.y)
+      ctx.lineTo(p2.x, p2.y)
       ctx.stroke()
       ctx.closePath()
     }
@@ -233,9 +189,9 @@
 
     function render() {
       drawBg()
+
       drawControlLine()
 
-      renderControlPoint()
       drawBezier()
     }
   </script>

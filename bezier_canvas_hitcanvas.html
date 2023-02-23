@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    #container {
+      position: relative;
+      width: 400px;
+      height: 400px;
+      margin: 20px auto;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="container">
+    <canvas id="graph" width="400" height="400"></canvas>
+  </div>
+
+  <script>
+    const container = document.querySelector('#container')
+    const c = container.querySelector('#graph')
+    const ctx = c.getContext('2d', { willReadFrequently: true })
+
+    let curDom = null
+    let copyCtx = null
+    let colorMapping = {}
+
+    let point1Pos = {
+      x: 50,
+      y: 50,
+      name: 'point1'
+    }
+
+    let point2Pos = {
+      x: 250,
+      y: 250,
+      name: 'point2'
+    }
+
+    
+    // 创建副本画布
+    createHitCanvas()
+
+    render()
+
+    // 鼠标移入容器后  判断按下的点是否在控制点内  如果在 并且 进行了拖拽行为
+    // 就不停清空画布 然后再重新绘制
+    container.addEventListener('mousedown', (e) => {
+      // 按下的时候判断是不是点在 控制点上
+      let activeDom = isClickInPoint(e)
+      curDom = activeDom
+
+      if (activeDom) {
+        container.addEventListener('mousemove', mousemoveFn)
+      }
+    })
+    container.addEventListener('mouseup', function (e) {
+      container.removeEventListener('mousemove', mousemoveFn)
+    })
+
+    function mousemoveFn(e) {
+      // 算出当前移动的点 在 canvas 画布上的坐标
+      const rect = c.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      // 不停的清空画布 和影子画布 然后在各自的画布上重新绘制
+      ctx.clearRect(0, 0, 400, 400)
+      copyCtx.clearRect(0, 0, 400, 400)
+
+      if (curDom === 'point1') {
+        point1Pos.x = x
+        point1Pos.y = y
+      } else {
+        point2Pos.x = x
+        point2Pos.y = y
+      }
+
+      render()
+    }
+
+    function createHitCanvas() {
+      const shadow = document.createElement('canvas')
+      shadow.width = c.clientWidth
+      shadow.height = c.clientHeight
+
+      copyCtx = shadow.getContext('2d', { willReadFrequently: true })
+
+      shadow.style.display = 'none'
+      container.appendChild(shadow)
+    }
+
+
+    function rgbToHex(color) {
+      const arr = color.match(/(\d(\.\d+)?)+/g) || [];
+      const res = arr.map(s => parseInt(s, 10))
+
+      const { r, g, b } = {
+        r: res[0],
+        g: res[1],
+        b: res[2]
+
+      };
+      return `#${toHex(r)}${toHex(g)}${toHex(b)}`
+
+      function toHex(n) {
+        return `${n > 15 ? '' : 0}${n.toString(16)}`
+      }
+    }
+
+    function isClickInPoint(e) {
+      const rect = c.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      // 拿当前坐标去影子画布上 取元素
+      let imageData = copyCtx.getImageData(x, y, 1, 1).data
+
+      if (imageData[3] == 255) {
+        let colorKey = rgbToHex(`rgb(${imageData[0]}, ${imageData[1]}, ${imageData[2]})`);
+
+        // 获取到了当前点击的是哪个元素
+        return colorMapping[colorKey]
+      }
+    }
+
+    function renderControlPoint() {
+      [point1Pos, point2Pos].forEach((pos, idx) => {
+        // 在显示画布上画元素
+        ctx.beginPath()
+        ctx.lineWidth = 1
+        ctx.strokeStyle = '#333'
+        ctx.arc(pos.x, pos.y, 10, 0, 2 * Math.PI)
+        ctx.fillStyle = idx === 0 ? '#ff0088' : '#00aabb'
+        ctx.fill()
+        ctx.stroke()
+        ctx.closePath()
+
+        // 先获取颜色  然后跟类名一起存入 映射表
+        let color = getRandomColor()
+        colorMapping[color] = pos.name
+
+        // 在影子画布上同样的位置画同样的元素, 用当前颜色填充
+        copyCtx.beginPath()
+        copyCtx.lineWidth = 1
+        copyCtx.strokeStyle = '#333'
+        copyCtx.arc(pos.x, pos.y, 10, 0, 2 * Math.PI)
+        copyCtx.stroke()
+        copyCtx.fillStyle = color
+        copyCtx.fill()
+        copyCtx.closePath()
+      })
+
+
+      function getRandomColor() {
+        return '#' + (function (h) {
+          return new Array(7 - h.length).join('0') + h
+        })((Math.random() * 0x1000000 << 0).toString(16))
+      }
+    }
+
+
+    function drawBezier() {
+      ctx.beginPath()
+      ctx.lineWidth = 4
+      ctx.strokeStyle = '#000000'
+      ctx.moveTo(0, 400)
+      ctx.bezierCurveTo(point1Pos.x, point1Pos.y, point2Pos.x, point2Pos.y, 400, 0)
+      ctx.stroke()
+    }
+
+    function drawControlLine() {
+      ctx.lineWidth = 2
+      ctx.strokeStyle = '#696969'
+
+      ctx.beginPath()
+      ctx.moveTo(0, 400)
+      ctx.lineTo(point1Pos.x, point1Pos.y)
+      ctx.stroke()
+      ctx.closePath()
+
+      ctx.beginPath()
+      ctx.moveTo(400, 0)
+      ctx.lineTo(point2Pos.x, point2Pos.y)
+      ctx.stroke()
+      ctx.closePath()
+    }
+
+    function drawBg() {
+      // 先画背景
+      let count = 0
+      let width = c.clientWidth
+      let height = 20
+      let sy = 0
+      let i = 0
+
+      while (count < c.clientHeight) {
+        ctx.beginPath()
+        ctx.fillStyle = i % 2 === 0 ? '#f0f0f0' : '#fff'
+        ctx.fillRect(0, sy, width, height)
+        ctx.closePath()
+        sy += 20
+        count += 20
+        i++
+      }
+
+      // 再画坐标轴和斜线
+      ctx.strokeStyle = '#8d8d8d'
+      ctx.lineWidth = 2
+
+      ctx.beginPath()
+      ctx.moveTo(0, 0)
+      ctx.lineTo(0, 400)
+      ctx.stroke()
+      ctx.closePath()
+
+      ctx.beginPath()
+      ctx.moveTo(0, 400)
+      ctx.lineTo(400, 400)
+      ctx.stroke()
+      ctx.closePath()
+
+      ctx.beginPath()
+      ctx.lineWidth = 5
+      ctx.strokeStyle = '#e5e5e5'
+      ctx.moveTo(0, 400)
+      ctx.lineTo(400, 0)
+      ctx.stroke()
+      ctx.closePath()
+    }
+
+    function render() {
+      drawBg()
+      drawControlLine()
+
+      renderControlPoint()
+      drawBezier()
+    }
+  </script>
+</body>
+
+</html>
