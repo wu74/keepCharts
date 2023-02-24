@@ -5400,17 +5400,3 @@ const data = [
     "kline_data_type_name": "前复权"
   }
 ]
-
-const data2 = data.map(item => ({
-  date: item.date,
-  time: item.time,
-  open: item.kline.open,
-  close: item.kline.close,
-  high: item.kline.high,
-  low: item.kline.low,
-  netChangeRatio: item.kline.netChangeRatio
-})).filter((item, idx) => {
-  return idx % 5 === 0
-})
-
-console.log(data2, 'data2');
